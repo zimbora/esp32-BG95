@@ -1,0 +1,123 @@
+
+# --- SETUP ---
+
+# Enable EGPRS only
+AT+COPS=1,2,"26801",0 (especificando 0 = GSM, então força: nwscanmode=1, iotopmode=<unchanged>)
+//AT+QCFG="nwscanmode",1,1
+
+# Enable NB-IoT only
+AT+COPS=1,2,"26801",9 (especificando 9 = NB-IoT, então força: nwscanmode=3, iotopmode=1)
+//AT+QCFG="iotopmode",1,1
+//AT+QCFG="nwscanmode",3,1
+
+# Enable eMTC only
+AT+COPS=1,2,"26801",8 (especificando 8 = eMTC, então força: nwscanmode=3, iotopmode=0)
+//AT+QCFG="iotopmode",0,1
+//AT+QCFG="nwscanmode",3,1
+
+# Enable eMTC and EGPRS both
+AT+COPS=1,2,"26801" (sem especificação de tecnologia de acesso, força: nwscanmode=0, iotopmode=<unchanged?>; especificando: 0 = GSM, 8 = eMTC, 9 = NB-IoT)
+//AT+QCFG="iotopmode",0,1
+//AT+QCFG="nwscanmode",0,1
+
+# Anything available (eMTC > NB-IoT > GSM @ nwscanseq)
+AT+COPS=1,2,"26801" (sem especificação de tecnologia de acesso, força: nwscanmode=0, iotopmode=<unchanged?>; especificando: 0 = GSM, 8 = eMTC, 9 = NB-IoT)
+//AT+QCFG="iotopmode",2,1
+//AT+QCFG="nwscanmode",0,1
+
+
+# configure RAT Searching Sequence
+AT+QCFG="nwscanseq"[,<scanseq>[,
+<effect>]]
+
+# configure band
+AT+QCFG="band"[,<gsmbandval>,<e
+mtcbandval>,<nbiotbandval>[,<effect>
+]]
+
+# --- PDP Context ---
+
+// attach/dettach (1/0) from PS (do it before activate PDP context)
+AT+CGATT=x
+*x = 1/0
+
+// set PDP context
+AT+CGDCONT=<cid>[,<PDP_type>[,<APN>[,<PDP_addr>[,<data_comp>[,<head_comp>]]]]]
+ex: AT+CGDCONT=<cid>,IP,"m2m.vodafone.pt"
+
+// activate or deactivate PDP context
+AT+CGACT=<state>,<cid>
+<state> 1/0
+
+// show PDP address
+AT+CGPADDR=?
+
+
+# --- GPRS ---
+
+AT+CFUN=1                                     // switch on radio
+
+// set apn
+AT+QICSGP=<contextID>[,<context_type>,<APN>[,<username>,<password>[,<authentication>]]]
+>> AT+QICSGP=1,1,"ocnetjws.prtop","","",0
+
+// activate context
+AT+QIACT=<contextID>
+>> AT+QIACT=1                                    // enable context
+
+// check IP
+AT+QIACT?                                     // check IP
+
+// deactivate context
+AT+QIDEACT=<contextID>
+>> AT+QIDEACT=1
+
+// EPGRS Network Registration Status
+AT+CGREG?
+
+# --- SOCKET ---
+
+// open socket
+AT+QIOPEN=<contextID>,<connectID>,<service_type>,<IP_address>/<domain_name>,<remote_port>[,<local_port>[,<access_mode>]]
+
+// close socket
+AT+QICLOSE=<connectID>[,<timeout>]
+
+// socket state
+AT+QISTATE=<query_type>,<contextID>
+
+<socket_state> Integer type. The socket service status.
+0 "Initial": connection has not been established
+1 "Opening": client is connecting or server is trying to listen
+2 "Connected": client/incoming connection has been established
+3 "Listening": server is listening
+4 "Closing": connection is closing
+
+// send data
+AT+QISEND=<connectID>,<send_length>
+
+  Ex:
+  AT+QISEND=0,5 //Send fixed-length data and the data length is 5 bytes.
+  >test2
+  SEND OK
+
+// check if the data has reach destination
+AT+QISEND=<connectID>,<send_length>
+
+// disable echo of QISEND
+AT+QISDE=0
+
+// read data
+AT+QIRD=<connectID>[,<read_length>]
++QIRD: <read_actual_length><CR><LF><data>
+// get data from socket
+
+UNSOLICITED COMMANDS
+“+QIURC:"recv",<connectID> // available data
++QIURC: "closed",<connectID> // socket closed
++QIURC: "pdpdeact",<contextID> // context shutdown
+
+
+
+# Power Saving mode
+AT+QPSMS=[<mode>[,<Requested_Periodic-RAU>[,<Requested_GPRS-READY-timer>[,<Requested_Periodic-TAU>[,<Requested_Active-Time>]]]]]
