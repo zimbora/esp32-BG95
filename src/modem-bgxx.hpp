@@ -121,7 +121,7 @@ class MODEMBGXX {
 		/*
 		* call it to initialize state machine
 		*/
-		bool init(uint8_t radio, uint8_t cops, uint8_t pwkey);
+		bool init(uint8_t radio, uint16_t cops, uint8_t pwkey);
 		/*
 		* call it to initialize serial port
 		*/
@@ -264,7 +264,6 @@ class MODEMBGXX {
 
 		uint32_t rssi_until = 20000;
 		uint32_t loop_until = 0;
-		uint32_t join_until = 5000;
 		uint32_t ready_until = 15000;
 
 		// last rssi
@@ -314,22 +313,22 @@ class MODEMBGXX {
 		/*
 		* configure base settings like ECHO mode and multiplex
 		*/
-		bool configure_radio_mode(uint8_t radio,uint8_t cops);
+		bool configure_radio_mode(uint8_t radio,uint16_t cops, bool force = false);
 
 
 		// --- TCP ---
-		void 			tcp_check_data_pending();
-		void 			tcp_read_buffer(uint8_t index, uint16_t wait = 100);
+		void tcp_check_data_pending();
+		void tcp_read_buffer(uint8_t index, uint16_t wait = 100);
 
 		// --- NETWORK STATE ---
-		int16_t 	get_rssi();
-		void 			get_state(); // get network state
-		int8_t 		get_actual_mode();
+		int16_t get_rssi();
+		void get_state(); // get network state
+		int8_t get_actual_mode();
 
 		// --- CLOCK ---
-		void 			sync_clock_ntp(bool force = false); // private
+		void sync_clock_ntp(bool force = false); // private
 
-		void 			check_commands();
+		void check_commands();
 
 		// --- MQTT ---
     bool MQTT_open(uint8_t clientID, const char* host, uint16_t port);

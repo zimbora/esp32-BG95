@@ -46,7 +46,7 @@ void MODEMBGXX::disable_port() {
 	modem->end();
 }
 
-bool MODEMBGXX::init(uint8_t radio, uint8_t cops, uint8_t pwkey){
+bool MODEMBGXX::init(uint8_t radio, uint16_t cops, uint8_t pwkey){
 
 	op.pwkey = pwkey;
 	pinMode(pwkey, OUTPUT);
@@ -206,6 +206,8 @@ bool MODEMBGXX::loop(uint32_t wait) {
 
 		loop_until = millis()+wait;
 
+		sync_clock_ntp();
+
 		return true;
 	}
 
@@ -314,36 +316,50 @@ bool MODEMBGXX::config() {
 	return true;
 }
 
-bool MODEMBGXX::configure_radio_mode(uint8_t radio,uint8_t cops){
+/*
+* configure radio technology and operator
+*
+* @radio - selects radio technology
+* @cops - operator selection (if 0 uses auto mode)
+* @force - if false and cops define, modem will enter in auto mode otherwise will try only the selected radio
+*
+* returns true if succeed
+*/
+bool MODEMBGXX::configure_radio_mode(uint8_t radio,uint16_t cops, bool force){
+
+	uint8_t mode = 0;
+
+	if(force) mode = 1;
+	else mode = 4;
 
 	if(op.radio == GPRS && op.technology != GPRS){
-		if(op.cops != 0){
-			if(!check_command("AT+COPS=4,2,\""+String(op.cops)+"\",0","OK","ERROR",45000))
+		if(cops != 0){
+			if(!check_command("AT+COPS="+String(mode)+",2,\""+String(cops)+"\",0","OK","ERROR",45000))
 				return false;
 		}else{
 			//check_command("AT+QCFG=\"iotopmode\",0,1","OK",3000);
 			check_command("AT+QCFG=\"nwscanmode\",1,1","OK",3000);
 		}
 	}else if(op.radio == NB && op.technology != NB){
-		if(op.cops != 0){
-			if(!check_command("AT+COPS=4,2,\""+String(op.cops)+"\",9","OK","ERROR",45000))
+		if(cops != 0){
+			if(!check_command("AT+COPS="+String(mode)+",2,\""+String(cops)+"\",9","OK","ERROR",45000))
 			return false;
 		}else{
 			check_command("AT+QCFG=\"iotopmode\",1,1","OK",3000);
 			check_command("AT+QCFG=\"nwscanmode\",0,1","OK",3000);
 		}
 	}else if(op.radio == CATM1 && op.technology != CATM1){
-		if(op.cops!=0){
-			//if(!check_command("AT+COPS=1,2,"+String(op.cops)+",8","OK","ERROR",45000)){
-			if(!check_command("AT+COPS=4,2,\""+String(op.cops)+"\",8","OK","ERROR",45000))
+		if(cops!=0){
+			//if(!check_command("AT+COPS=1,2,"+String(cops)+",8","OK","ERROR",45000)){
+			if(!check_command("AT+COPS="+String(mode)+",2,\""+String(cops)+"\",8","OK","ERROR",45000))
 				return false;
 		}else{
 			check_command("AT+QCFG=\"iotopmode\",0,1","OK",3000);
 			check_command("AT+QCFG=\"nwscanmode\",0,1","OK",3000);
 		}
 	}else if(op.radio == AUTO){
-		if(op.cops != 0){
-			if(!check_command("AT+COPS=4,2,\""+String(op.cops)+"\"","OK","ERROR",45000))
+		if(cops != 0){
+			if(!check_command("AT+COPS="+String(mode)+",2,\""+String(cops)+"\"","OK","ERROR",45000))
 				return false;
 		}else{
 			check_command("AT+QCFG=\"iotopmode\",2,1","OK",3000);
@@ -352,6 +368,7 @@ bool MODEMBGXX::configure_radio_mode(uint8_t radio,uint8_t cops){
 	}
 	else return false;
 
+	return true;
 }
 
 // --- SMS ---
@@ -1309,9 +1326,7 @@ bool MODEMBGXX::get_clock(tm* t){
 		return false;
 
 	uint8_t index = 0;
-	#ifdef DEBUG_BG95_HIGH
-	log("response: "+response);
-	#endif
+
 	index = response.indexOf("/");
 	if(index == -1)
 		return false;
@@ -1390,9 +1405,6 @@ bool MODEMBGXX::get_clock(tm* t){
 			t->tm_min += response.toInt()%4*15;
 		}
 	}
-	#ifdef DEBUG_BG95
-	log("tz: "+String(tz));
-	#endif
 
   int y = t->tm_year;
   int mo = t->tm_mon;
@@ -1401,7 +1413,13 @@ bool MODEMBGXX::get_clock(tm* t){
   int m = t->tm_min;
   int s = t->tm_sec;
 
-	Serial.printf(" %d %d %d %d:%d:%d \n",y,mo,d,h,m,s);
+	/*
+	#ifdef DEBUG_BG95
+	log_output->printf("date(yyyy/mm/dd hh:mm:ss) - %d/%d/%d %d:%d:%d \n",y+2000,mo,d,h,m,s);
+	log("tz: "+String(tz));
+	#endif
+	*/
+
 	/*
   setTime(h, m, s, d, mo, y);
 
@@ -2494,7 +2512,8 @@ void MODEMBGXX::check_commands() {
 }
 
 void MODEMBGXX::log(String text) {
-	log_output->println("[" + date() + "] bgxx: " + text);
+	//log_output->println("[" + date() + "] bgxx: " + text);
+	log_output->println("bgxx: " + text);
 }
 
 String MODEMBGXX::date() {
