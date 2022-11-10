@@ -7,10 +7,15 @@ package to communicate with BG95 modem
 
 - APN (multi connection)
 - NTP (clock sync at each hour)
+- GNSS
 - SMS
 - MQTT (multi connection)
-- TCP
-- HTTP to develop ..
+- TCP (multi connection)
+- HTTP (despite modem supports it, I don't see advantage on using it. Use TCP instead)
+- COAP (not implemented for now)
+- LwM2M (not implemented for now)
+- DFOTA (to develop..)
+- PSM (not implemented for now)
 
 ## Implementation
 The library will create a hierarchy of folders and files like unix filesystem.
