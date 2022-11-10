@@ -511,12 +511,12 @@ bool MODEMBGXX::sms_remove(uint8_t index) {
 	return true;
 }
 
-bool MODEMBGXX::sms_handler() {
+bool MODEMBGXX::sms_check_handler() {
 	return (sms_handler_func != NULL);
 }
 
 bool MODEMBGXX::sms_handler(void(*handler)(uint8_t, String, String)) {
-	if (sms_handler()) return false;
+	if (sms_check_handler()) return false;
 
 	sms_handler_func = handler;
 

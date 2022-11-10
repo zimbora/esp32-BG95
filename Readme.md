@@ -30,7 +30,18 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 - [bool setup(uint8_t cid, String apn, String username, String password)](#Setup)
 - [bool loop(uint32_t loop = 10)](#Loop)
 
+### Info
+
+- [String get_imei(uint32_t wait = 5000)](#Info-get-imei)
+- [String get_ccid(uint32_t wait = 5000)](#Info-get-ccid)
+- [String get_imsi(uint32_t wait = 5000)](#Info-get-imsi)
+- [String get_subscriber_number(uint16_t wait = 3000)](#Info-get-subscribe-number)
+
 ### Radio
+
+- add rssi
+- technology in use
+- operator in use
 
 ### APN
 
@@ -41,6 +52,13 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 - [bool close_pdp_context(uint8_t cid = 1)](#APN-close-PDP-context)
 - [String check_context_state(uint8_t contextID)](#APN-check-context-state)
 - [String check_connection_state(uint8_t connectionID)](#APN-check-connection-state)
+
+### SMS
+
+- [bool sms_check_handler()](#SMS-check-handler)
+- [bool sms_handler(void(*handler)(uint8_t, String, String))](#SMS-handler)
+- [bool sms_send(String origin, String message)](#SMS-send)
+- [bool sms_remove(uint8_t index)](#SMS-remove)
 
 ### TCP
 
@@ -144,6 +162,27 @@ bool setup(uint8_t cid, String apn, String username, String password)]
 bool loop(uint32_t loop = 10)]
 ```
 
+### Info
+
+#### Info get imei
+```
+String get_imei(uint32_t wait = 5000)](
+```
+
+#### Info get ccid
+```
+String get_ccid(uint32_t wait = 5000)](
+```
+
+#### Info get imsi
+```
+String get_imsi(uint32_t wait = 5000)](
+```
+
+#### Info get subscribe number
+```
+String get_subscriber_number(uint16_t wait = 3000)](
+```
 
 ### Radio
 
@@ -190,6 +229,32 @@ String check_context_state(uint8_t contextID)
 * returns the state of connection id
 ```
 String check_connection_state(uint8_t connectionID)
+```
+
+### SMS
+
+#### SMS check handler
+* check if there is some function to deal with sms
+```
+bool sms_check_handler()
+```
+
+#### SMS handler
+pass callback for sms
+```
+bool sms_handler(void(*handler)(uint8_t, String, String))
+```
+
+#### SMS send
+* send sms
+```
+bool sms_send(String origin, String message)
+```
+
+#### SMS remove
+* remove sms
+```
+bool sms_remove(uint8_t index)
 ```
 
 ### TCP

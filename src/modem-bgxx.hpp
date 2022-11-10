@@ -138,6 +138,8 @@ class MODEMBGXX {
 		* setup APN configuration
 		*
 		* @cid - 0-16, limited to MAX_CONNECTIONS
+		*
+		* returns true if succeed
 		*/
 		bool setup(uint8_t cid, String apn, String username, String password);
 		//
@@ -155,6 +157,9 @@ class MODEMBGXX {
 		int16_t rssi(); // return last read value
 
 		// --- CONTEXT ---
+		/*
+		* get IP of a context
+		*/
 		String get_ip(uint8_t cid = 1, uint32_t wait = 5000);
 		/*
 		* check if modem is connected to apn
@@ -164,7 +169,6 @@ class MODEMBGXX {
 		* check if modem has IP
 		*/
 		bool has_context(uint8_t cid = 1);
-
 		/*
 		* open context
 		*/
