@@ -24,6 +24,14 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 ### MQTT
 
+[bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-1)
+[bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-2)
+[bool tcp_connected(uint8_t cid)](#TCP-connected)
+[bool tcp_close(uint8_t cid)](#TCP-close)
+[bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-send)
+[uint16_t tcp_recv(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-recv)
+[uint16_t tcp_has_data(uint8_t cid)](#TCP-has-data)
+
 [void MQTT_init(bool(*callback)(String topic,String payload))](#MQTT-init)
 [bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload)](#MQTT-setup)
 [bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883)](#MQTT-connect)
@@ -38,15 +46,84 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 ## Examples
   Run programs inside examples folder to check how it works
-### demo
-  Call all available public methods
+
+### demo mqtt
+  Establish connection to one or multiple broker, subscribes topics and receive messages (add publish messages to the example)
+  Multiples contexts can also be tested
+
+### demo tcp
+  Establish connection to one or multiple hosts, make a request, receive response
+  Multiples contexts can also be tested
 
 ## Unit Test with Arduino
-  For now and unless LITTLEFS could be compiled with clang, this library will be tested directly with the hardware
+  Not available for now
 ### unitTest
-  Run program "unitTest.ino" inside examples/unitTest to test library
+  Not available for now
 
 ## Public Methods - Extension
+
+### TCP connect 1
+* connect to a host:port
+*
+* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @proto - "UDP" or "TCP"
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+```
+bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait)
+```
+
+### TCP connect 2
+* connect to a host:port
+*
+* @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
+* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @proto - "UDP" or "TCP"
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+```
+bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait)
+```
+
+### TCP connected
+* return tcp connection status
+```
+bool MODEMBGXX::tcp_connected(uint8_t clientID)
+```
+
+### TCP close
+* close tcp connection
+*
+* return tcp connection status
+```
+bool MODEMBGXX::tcp_close(uint8_t clientID)
+```
+
+### TCP send
+* send data through open channel
+*
+* returns true if succeed
+```
+bool MODEMBGXX::tcp_send(uint8_t clientID, uint8_t *data, uint16_t size)
+```
+
+### TCP recv
+* copies data to pointer if available
+*
+* returns len of data copied
+```
+uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, uint8_t *data, uint16_t size)
+```
+
+### TCP has data
+* returns len of data available for clientID
+```
+uint16_t MODEMBGXX::tcp_has_data(uint8_t clientID)
+```
 
 ### MQTT init
 * init mqtt

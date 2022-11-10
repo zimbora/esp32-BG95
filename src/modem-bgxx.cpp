@@ -509,6 +509,16 @@ bool MODEMBGXX::sms_handler(void(*handler)(uint8_t, String, String)) {
 // --- --- ---
 
 // --- TCP ---
+/*
+* connect to a host:port
+*
+* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @proto - "UDP" or "TCP"
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+*/
 bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait) {
 
 	uint8_t contextID = 1;
@@ -523,7 +533,7 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 	tcp[clientID].active = true;
 
 	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"" + proto + "\",\"" + host + "\","
-	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),10000){
+	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
 	}else close(clientID);
@@ -533,6 +543,17 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 	return false;
 }
 
+/*
+* connect to a host:port
+*
+* @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
+* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @proto - "UDP" or "TCP"
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+*/
 bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait) {
 	if(apn_connected(contextID) != 1)
 		return false;
@@ -547,7 +568,7 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, S
 	tcp[clientID].active = true;
 
 	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"" + proto + "\",\"" + host + "\","
-	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),10000){
+	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
 	}else close(clientID);
@@ -556,13 +577,19 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, S
 
 	return false;
 }
-
+/*
+* return tcp connection status
+*/
 bool MODEMBGXX::tcp_connected(uint8_t clientID) {
 
 	if (clientID >= MAX_TCP_CONNECTIONS) return false;
 	return tcp[clientID].connected;
 }
-
+/*
+* close tcp connection
+*
+* return tcp connection status
+*/
 bool MODEMBGXX::tcp_close(uint8_t clientID) {
 
 	if(clientID >= MAX_TCP_CONNECTIONS)
@@ -577,7 +604,11 @@ bool MODEMBGXX::tcp_close(uint8_t clientID) {
 
 	return tcp[clientID].connected;
 }
-
+/*
+* send data through open channel
+*
+* returns true if succeed
+*/
 bool MODEMBGXX::tcp_send(uint8_t clientID, uint8_t *data, uint16_t size) {
 	if (clientID >= MAX_CONNECTIONS) return false;
 	if (tcp_connected(clientID) == 0) return false;
@@ -625,7 +656,11 @@ bool MODEMBGXX::tcp_send(uint8_t clientID, uint8_t *data, uint16_t size) {
 
 	return false;
 }
-
+/*
+* copies data to pointer if available
+*
+* returns len of data copied
+*/
 uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, uint8_t *data, uint16_t size) {
 
 	if (clientID >= MAX_TCP_CONNECTIONS) return false;
@@ -658,7 +693,9 @@ uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, uint8_t *data, uint16_t size) {
 
 	return size;
 }
-
+/*
+* returns len of data available for clientID
+*/
 uint16_t MODEMBGXX::tcp_has_data(uint8_t clientID){
 
 	if (clientID >= MAX_TCP_CONNECTIONS) return 0;

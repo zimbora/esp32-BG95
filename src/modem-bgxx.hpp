@@ -201,18 +201,8 @@ class MODEMBGXX {
 		bool sms_remove(uint8_t index);
 
 		// --- TCP ---
-		/*
-		* connect to a host:port
-		*
-		* @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
-		* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
-		* @proto - "UDP" or "TCP"
-		* @host - can be IP or DNS
-		*
-		* return true if connection was established
-		*/
-		bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
-		bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
+		bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
+		bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connected(uint8_t cid);
 		bool tcp_close(uint8_t cid);
 		bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size);
