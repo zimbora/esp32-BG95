@@ -22,26 +22,27 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 ### TCP
 
+- [bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-1)
+- [bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-2)
+- [bool tcp_connected(uint8_t cid)](#TCP-connected)
+- [bool tcp_close(uint8_t cid)](#TCP-close)
+- [bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-send)
+- [uint16_t tcp_recv(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-recv)
+- [uint16_t tcp_has_data(uint8_t cid)](#TCP-has-data)
+
 ### MQTT
 
-[bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-1)
-[bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-2)
-[bool tcp_connected(uint8_t cid)](#TCP-connected)
-[bool tcp_close(uint8_t cid)](#TCP-close)
-[bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-send)
-[uint16_t tcp_recv(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-recv)
-[uint16_t tcp_has_data(uint8_t cid)](#TCP-has-data)
 
-[void MQTT_init(bool(*callback)(String topic,String payload))](#MQTT-init)
-[bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload)](#MQTT-setup)
-[bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883)](#MQTT-connect)
-[bool MQTT_connected(uint8_t clientID)](#MQTT-connected)
-[int8_t MQTT_disconnect(uint8_t clientID)](#MQTT-disconnect)
-[bool MQTT_subscribeTopic(uint8_t clientID, uint16_t msg_id, String topic,uint8_t qos)](#MQTT-subscribeTopic)
-[bool MQTT_subscribeTopics(uint8_t clientID, uint16_t msg_id, String topic[],uint8_t qos[], uint8_t len)](#MQTT-subscribeTopics)
-[int8_t MQTT_unSubscribeTopic(uint8_t clientID, uint16_t msg_id, String topic[], uint8_t len)](#MQTT-unSubscribeTopic)
-[int8_t MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, uint8_t retain, String topic, String msg)](#MQTT-publish)
-[void MQTT_readAllBuffers(uint8_t clientID)](#MQTT-readAllBuffers)
+- [void MQTT_init(bool(*callback)(String topic,String payload))](#MQTT-init)
+- [bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload)](#MQTT-setup)
+- [bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883)](#MQTT-connect)
+- [bool MQTT_connected(uint8_t clientID)](#MQTT-connected)
+- [int8_t MQTT_disconnect(uint8_t clientID)](#MQTT-disconnect)
+- [bool MQTT_subscribeTopic(uint8_t clientID, uint16_t msg_id, String topic,uint8_t qos)](#MQTT-subscribeTopic)
+- [bool MQTT_subscribeTopics(uint8_t clientID, uint16_t msg_id, String topic- [],uint8_t qos- [], uint8_t len)](#MQTT-subscribeTopics)
+- [int8_t MQTT_unSubscribeTopic(uint8_t clientID, uint16_t msg_id, String topic- [], uint8_t len)](#MQTT-unSubscribeTopic)
+- [int8_t MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, uint8_t retain, String topic, String msg)](#MQTT-publish)
+- [void MQTT_readAllBuffers(uint8_t clientID)](#MQTT-readAllBuffers)
 
 
 ## Examples
