@@ -36,10 +36,6 @@ MQTT_CONNECTION mqtt1 = {
   #endif
 #endif
 
-uint8_t mqtt_clientID = 0;
-uint8_t tcp_index = 0;
-uint8_t msg_id = 0;
-
 String topic[] = {
   "esp32/freeRTOS/+/status"
 };
@@ -48,8 +44,9 @@ uint8_t topic_qos[] = {
 };
 uint8_t topic_len = 1;
 
-bool (*mqtt_callback)(String,String);
-bool mqtt_parse_msg(String topic, String payload){
+bool (*mqtt_callback)(uint8_t,String,String);
+bool mqtt_parse_msg(uint8_t clientID, String topic, String payload){
+  Serial.printf("client id: %d \n",clientID);
   Serial.printf("parse topic: %s \n",topic.c_str());
   Serial.printf("with payload: %s \n",payload.c_str());
   return true;

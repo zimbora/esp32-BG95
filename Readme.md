@@ -5,10 +5,10 @@ package to communicate with BG95 modem
 
 ## Functionalities
 
-- APN keep connection alive
+- APN (multi connection)
 - NTP (clock sync at each hour)
 - SMS
-- MQTT
+- MQTT (multi connection)
 - TCP
 - HTTP to develop ..
 
@@ -19,6 +19,8 @@ pass the level of depth that you want to delete those files.
 Folders cannot contain "." in the name and files are mandatory to contain "." in the name
 
 ## Public Methods
+
+### TCP
 
 ### MQTT
 

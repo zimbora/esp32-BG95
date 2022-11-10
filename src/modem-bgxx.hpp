@@ -36,7 +36,7 @@
 #define   SMS_CHECK_INTERVAL 			30000 // milli
 
 #define   DEBUG_BG95
-//#define   DEBUG_BG95_HIGH
+#define   DEBUG_BG95_HIGH
 
 #define MAX_SMS 10
 
@@ -50,6 +50,9 @@ struct SMS {
 // configurations
 struct Modem {
 	uint8_t pwkey;
+	bool ready;
+	bool did_config;
+	bool sim_ready;
 	uint8_t radio;
 	uint16_t cops;
 	bool force;
@@ -133,6 +136,8 @@ class MODEMBGXX {
 		bool powerCycle();
 		/*
 		* setup APN configuration
+		*
+		* @cid - 0-16, limited to MAX_CONNECTIONS
 		*/
 		bool setup(uint8_t cid, String apn, String username, String password);
 		//
@@ -152,12 +157,14 @@ class MODEMBGXX {
 		// --- CONTEXT ---
 		String get_ip(uint8_t cid = 1, uint32_t wait = 5000);
 		/*
+		* check if modem is connected to apn
+		*/
+		bool apn_connected(uint8_t cid = 1);
+		/*
 		* check if modem has IP
 		*/
 		bool has_context(uint8_t cid = 1);
 
-		// join an APN
-		void join(uint8_t cid = 1);
 		/*
 		* open context
 		*/
@@ -166,6 +173,15 @@ class MODEMBGXX {
 		* close context
 		*/
 		bool close_pdp_context(uint8_t cid = 1);
+		/*
+		* returns the state of context id
+		*/
+		String check_context_state(uint8_t contextID);
+		/*
+		* returns the state of connection id
+		*/
+		String check_connection_state(uint8_t connectionID);
+
 		// --- SMS ---
 		/*
 		* check if there is some function to deal with sms
@@ -188,17 +204,20 @@ class MODEMBGXX {
 		/*
 		* connect to a host:port
 		*
-		* @cid - connection id 1-16, yet it is limited to MAX_CONNECTIONS
+		* @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
+		* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+		* @proto - "UDP" or "TCP"
 		* @host - can be IP or DNS
 		*
 		* return true if connection was established
 		*/
-		bool connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
-		bool connect(uint8_t cid, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
-		bool connected(uint8_t cid);
-		bool close(uint8_t cid);
-		bool send(uint8_t cid, uint8_t *data, uint16_t size);
-		uint16_t recv(uint8_t cid, uint8_t *data, uint16_t size);
+		bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
+		bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000);
+		bool tcp_connected(uint8_t cid);
+		bool tcp_close(uint8_t cid);
+		bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size);
+		uint16_t tcp_recv(uint8_t cid, uint8_t *data, uint16_t size);
+		uint16_t tcp_has_data(uint8_t cid);
 
 		// --- CLOCK ---
 		/*
@@ -221,7 +240,7 @@ class MODEMBGXX {
 		String get_position();
 
 		// --- MQTT ---
-    void MQTT_init(bool(*callback)(String topic,String payload));
+    void MQTT_init(bool(*callback)(uint8_t clientID, String topic,String payload));
     bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload);
     bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883);
     bool MQTT_connected(uint8_t clientID);
@@ -235,40 +254,23 @@ class MODEMBGXX {
 		void log_status();
 	private:
 
-		int8_t pwkey = -1;
 		int32_t tz = 0;
 
 		uint8_t cereg; // Unsolicited LTE commands
 		uint8_t cgreg; // Unsolicited GPRS commands
-		int8_t radio_state;
 
-		// modem radio technology
-		uint8_t radio; // desired
-		uint16_t cops; // desired
-		uint8_t technology; // actual
-
-		// have we configured modem?
-		bool did_config;
-
+		// --- TCP ---
 		// size of each buffer
-		uint16_t buffer_len[MAX_CONNECTIONS];
-
-		// connection state of each connection
-		bool connected_state[MAX_CONNECTIONS]; // context connection
-		bool tcp_connected_state[MAX_TCP_CONNECTIONS]; // tcp connection
-		bool mqtt_connected_state[MAX_MQTT_CONNECTIONS]; // mqtt connection
-
+		uint16_t buffer_len[MAX_TCP_CONNECTIONS];
 		// data pending of each connection
-		bool data_pending[MAX_CONNECTIONS];
-
+		bool data_pending[MAX_TCP_CONNECTIONS];
 		// validity of each connection state
-		uint32_t connected_until[MAX_CONNECTIONS];
-
+		uint32_t connected_until[MAX_TCP_CONNECTIONS];
 		// last connection start
-		uint32_t connected_since[MAX_CONNECTIONS];
-
+		uint32_t connected_since[MAX_TCP_CONNECTIONS];
 		// data buffer for each connection
-		char buffers[MAX_CONNECTIONS][CONNECTION_BUFFER];
+		char buffers[MAX_TCP_CONNECTIONS][CONNECTION_BUFFER];
+		// --- --- ---
 
 		uint32_t rssi_until = 20000;
 		uint32_t loop_until = 0;
@@ -304,18 +306,6 @@ class MODEMBGXX {
 		*/
 		void increase_modem_reboot();
 		/*
-		* check if gms is ready
-		*/
-		bool gsm_ready();
-		/*
-		* check if apn is ready
-		*/
-		bool apn_ready();
-		/*
-		* check if modem is connected to apn
-		*/
-		int8_t apn_connected();
-		/*
 		* register on network
 		*/
 		bool enable_pdp(uint8_t cid);
@@ -338,17 +328,13 @@ class MODEMBGXX {
 
 
 		// --- TCP ---
-		void 			check_connection_state(int8_t cid);
-		void 			check_data_pending();
-		bool 			has_data_pending(uint8_t index);
-		void 			read_buffer(uint8_t index, uint16_t wait = 100);
+		void 			tcp_check_data_pending();
+		void 			tcp_read_buffer(uint8_t index, uint16_t wait = 100);
 
 		// --- NETWORK STATE ---
 		int16_t 	get_rssi();
 		void 			get_state(); // get network state
 		int8_t 		get_actual_mode();
-		void 			status(); // request IP connection status
-		String 		state_machine(uint32_t wait = 3000);
 
 		// --- CLOCK ---
 		void 			sync_clock_ntp(bool force = false); // private
@@ -368,7 +354,7 @@ class MODEMBGXX {
 		// process pending SMS messages
 		void process_sms(uint8_t index);
 
-		void check_modem_buffers();
+		//void check_modem_buffers();
 		String check_messages();
 
 		String parse_command_line(String line, bool set_data_pending = true);
