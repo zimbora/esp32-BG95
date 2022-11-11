@@ -15,6 +15,7 @@ Modem op = {
 APN apn[MAX_CONNECTIONS];
 TCP tcp[MAX_TCP_CONNECTIONS];
 MQTT mqtt[MAX_MQTT_CONNECTIONS];
+HTTP http;
 
 int8_t mqtt_buffer[] = {-1,-1,-1,-1,-1}; // index of msg to read
 bool (*parseMQTTmessage)(uint8_t,String,String);
@@ -181,6 +182,7 @@ bool MODEMBGXX::setup(uint8_t cid, String apn_, String username, String password
 		return false;
 
 	apn[cid-1].active = true;
+	apn[cid-1].retry = 0;
 
 	if (!op.did_config){
 		config();
@@ -626,7 +628,7 @@ bool MODEMBGXX::tcp_close(uint8_t clientID) {
 *
 * returns true if succeed
 */
-bool MODEMBGXX::tcp_send(uint8_t clientID, uint8_t *data, uint16_t size) {
+bool MODEMBGXX::tcp_send(uint8_t clientID, const char *data, uint16_t size) {
 	if (clientID >= MAX_CONNECTIONS) return false;
 	if (tcp_connected(clientID) == 0) return false;
 
@@ -678,7 +680,7 @@ bool MODEMBGXX::tcp_send(uint8_t clientID, uint8_t *data, uint16_t size) {
 *
 * returns len of data copied
 */
-uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, uint8_t *data, uint16_t size) {
+uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, char *data, uint16_t size) {
 
 	if (clientID >= MAX_TCP_CONNECTIONS) return false;
 
@@ -686,24 +688,17 @@ uint16_t MODEMBGXX::tcp_recv(uint8_t clientID, uint8_t *data, uint16_t size) {
 
 	uint16_t i;
 
-	if (buffer_len[clientID] < size) {
+	if (buffer_len[clientID] < size)
 		size = buffer_len[clientID];
-
-		for (i = 0; i < size; i++) {
-			data[i] = buffers[clientID][i];
-		}
-
-		buffer_len[clientID] = 0;
-
-		return size;
-	}
 
 	for (i = 0; i < size; i++) {
 		data[i] = buffers[clientID][i];
 	}
 
-	for (i = size; i < buffer_len[clientID]; i++) {
-		buffers[clientID][i - size] = buffers[clientID][i];
+	if (buffer_len[clientID] > size){
+		for (i = size; i < buffer_len[clientID]; i++) {
+			buffers[clientID][i - size] = buffers[clientID][i];
+		}
 	}
 
 	buffer_len[clientID] -= size;
@@ -718,6 +713,221 @@ uint16_t MODEMBGXX::tcp_has_data(uint8_t clientID){
 	if (clientID >= MAX_TCP_CONNECTIONS) return 0;
 
 	return buffer_len[clientID];
+}
+
+
+bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint8_t contextID){
+
+	if(contextID == 0 || contextID > MAX_CONNECTIONS)
+		return false;
+
+	if(clientID >= MAX_TCP_CONNECTIONS)
+		return false;
+
+	if(has_context(contextID)){
+		if(tcp_connect(contextID,clientID, "TCP", host,80)){
+			String request = "GET " + path + " HTTP/1.1\r\n" +
+						 "Host: " + host + "\r\n" +
+						 "Cache-Control: no-cache\r\n" +
+						 "Connection: close\r\n\r\n";
+
+			if(!tcp_send(clientID,request.c_str(),request.length()))
+				Serial.printf("failure doing http request: %s \n",request.c_str());
+
+		}else log_output->printf("Connection to %s has failed \n",host.c_str());
+	}else{
+		log("no context");
+		return false;
+	}
+
+  return true;
+}
+
+uint16_t MODEMBGXX::http_get_header_length(uint8_t clientID){
+
+	if (clientID >= MAX_TCP_CONNECTIONS) return false;
+
+	if (buffer_len[clientID] == 0) return 0;
+
+	uint16_t i;
+	uint8_t last_char = 0;
+	for(i=0; i<buffer_len[clientID]; i++){
+		char a = buffers[clientID][i-3];
+		char b = buffers[clientID][i-2];
+		char c = buffers[clientID][i-1];
+		char d = buffers[clientID][i];
+
+		if(i>=3){
+			if(a == '\r' && b == '\n' && c == '\r' && d == '\n')
+				return i+1;
+		}
+	}
+
+	return 0;
+
+}
+
+bool MODEMBGXX::http_wait_response(uint8_t clientID){
+
+	uint32_t request_timeout = millis() + 15000;
+
+	while(!tcp_has_data(clientID) && request_timeout > millis()){
+		check_messages();
+		tcp_check_data_pending();
+	}
+
+	if(request_timeout < millis())
+		return false;
+
+	http.body_len = http_get_header_length(clientID);
+	log_output->printf("header_length: %d \n",http.body_len);
+
+	if(http.body_len == 0)
+		return false;
+
+	char* data = (char*)malloc(http.body_len);
+	if(data == nullptr)
+		return false;
+
+	uint16_t len = tcp_recv(clientID,data,http.body_len);
+
+	http_parse_header((char*)data,len);
+	free(data);
+
+	// stores body
+	return true;
+}
+
+void MODEMBGXX::http_parse_header(char* data, uint16_t len){
+
+	http.body_len = 0;
+	memset(http.responseStatus,0,sizeof(http.responseStatus));
+	memset(http.contentType,0,sizeof(http.contentType));
+	memset(http.md5,0,sizeof(http.md5));
+
+	std::string header;
+	header.assign(&data[0],&data[len-1]);
+
+	uint16_t index = 0;
+	uint16_t i = 0;
+	while(true){
+
+		index = header.find("\r\n");
+		if(index == std::string::npos)
+			break;
+		std::string line = header.substr(0,index+2);
+		Serial.printf("line: %s",line.c_str());
+		if(i==0){
+			String res_str = String(line.c_str());
+			if(res_str.length() < sizeof(http.responseStatus)){
+				memcpy(http.responseStatus,res_str.c_str(),sizeof(res_str));
+			}else{
+				memcpy(http.responseStatus,res_str.c_str(),sizeof(http.responseStatus));
+			}
+		}
+
+		if(line.find("Content-Length: ") != std::string::npos){
+			String length_str = String(line.substr(16).c_str());
+			http.body_len = length_str.toInt();
+		}else if(line.find("Content-MD5: ") != std::string::npos){
+			String md5_str = String(line.substr(13).c_str());
+
+			while(i*2<md5_str.length()){
+		    Serial.printf("%x ",str2hex(md5_str.substring(i*2,i*2+2)));
+		    http.md5[i] = str2hex(md5_str.substring(i*2,i*2+2));
+				i++;
+			}
+
+		}else if(line.find("Content-Type: ") != std::string::npos){
+			String ctype = String(line.substr(14).c_str());
+			if(ctype.length() < sizeof(http.md5)){
+				memcpy(http.contentType,ctype.c_str(),sizeof(ctype));
+			}else{
+				memcpy(http.contentType,ctype.c_str(),sizeof(http.contentType));
+			}
+		}
+
+		if(index+3 >= header.length())
+			break;
+		header = header.substr(index+2);
+		i++;
+
+	}
+	return;
+}
+
+String MODEMBGXX::http_response_status(){
+
+	return String(http.responseStatus);
+}
+
+String MODEMBGXX::http_md5(){
+
+	return String(http.md5);
+}
+
+uint16_t MODEMBGXX::http_get_body_size(){
+	return http.body_len;
+}
+
+uint16_t MODEMBGXX::http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait){
+
+	uint16_t count = 0;
+	uint32_t timeout = millis() + wait;
+
+	while(true){
+
+		uint16_t size = tcp_has_data(clientID);
+		if(size+count > len)
+			return count;
+
+		// get data from internal buffer
+		if(size > 0){
+			count += tcp_recv(clientID,&data[count],len-count);
+			Serial.printf("count %d \n", count);
+		}
+
+		if(count == len)
+			return count;
+
+		// get data from modem
+		if(!tcp_has_data(clientID)){
+			check_messages();
+			tcp_check_data_pending();
+		}
+
+		if(timeout < millis())
+			return count;
+  }
+}
+
+bool MODEMBGXX::http_check_md5(char* data, uint16_t len){
+
+	char hash[16];
+	mbedtls_md_init(&ctx);
+  mbedtls_md_type_t md_type = MBEDTLS_MD_MD5;
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const unsigned char *) data, len);
+  mbedtls_md_finish(&ctx, (unsigned char*)hash);
+  mbedtls_md_free(&ctx);
+
+	Serial.printf("calculated md5: %s \n",hash);
+	Serial.printf("md5: %s \n",http.md5);
+
+	uint8_t i = 0;
+	while(i<sizeof(http.md5)){
+    Serial.printf("%x ",hash[i]);
+    Serial.printf("%x ",http.md5[i]);
+    if(hash[i] != http.md5[i])
+      return false;
+		i++;
+	}
+
+	if(memcmp(hash,http.md5,16) == 0)
+		return true;
+
+	return false;
 }
 
 String MODEMBGXX::get_subscriber_number(uint16_t wait){
@@ -1045,6 +1255,7 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 			log("network connected: "+String(cid));
 			#endif
 			apn[cid-1].connected = true;
+			apn[cid-1].retry = 0;
 		}else{
 			#ifdef DEBUG_BG95
 			log("network disconnected: "+String(cid));
@@ -1204,8 +1415,15 @@ bool MODEMBGXX::open_pdp_context(uint8_t contextID) {
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return false;
 
+	if(op.technology == 0)
+		return false;
+
 	if(apn[contextID-1].connected)
 		return false;
+
+	apn[contextID-1].retry *= 2;
+	if(apn[contextID-1].retry > 6*60*60*1000)
+		apn[contextID-1].retry = 6*60*60*1000;
 
 	return check_command("AT+QIACT="+String(contextID), "OK", "ERROR",30000);
 }
@@ -1441,6 +1659,9 @@ void MODEMBGXX::sync_clock_ntp(bool force){
 	else return;
 
 	//get_command_no_ok("AT+QNTP=1,\"202.120.2.101\",123","+QNTP: ",60000);
+	if(!apn[0].connected)
+		return;
+
 	get_command("AT+QNTP=1,\"pool.ntp.org\",123","+QNTP: ",60000);
 }
 
@@ -2552,4 +2773,8 @@ boolean MODEMBGXX::isNumeric(String str) {
         return false;
     }
     return true;
+}
+
+int MODEMBGXX::str2hex(String str){
+  return (int)strtol(str.c_str(), NULL, 16);
 }

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Time.h>
 #include <TimeLib.h>
+#include "mbedtls/md.h"
 
 #define GSM 											1
 #define GPRS 											2
@@ -65,6 +66,7 @@ struct APN {
 	uint8_t contextID; // context id 1-16
 	bool active;
 	bool connected;
+	uint32_t retry;
 	char ip[15];
 };
 
@@ -85,6 +87,13 @@ struct MQTT {
 	uint8_t socket_state;
 	bool active;
 	bool connected;
+};
+
+struct HTTP{
+		uint16_t body_len;
+		char md5[16];
+		char responseStatus[32];
+		char contentType[32];
 };
 
 class MODEMBGXX {
@@ -190,7 +199,7 @@ class MODEMBGXX {
 		/*
 		* check if there is some function to deal with sms
 		*/
-		bool sms_handler();
+		bool sms_check_handler();
 		/*
 		* pass callback for sms
 		*/
@@ -207,12 +216,22 @@ class MODEMBGXX {
 		// --- TCP ---
 		bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
-		bool tcp_connected(uint8_t cid);
-		bool tcp_close(uint8_t cid);
-		bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size);
-		uint16_t tcp_recv(uint8_t cid, uint8_t *data, uint16_t size);
-		uint16_t tcp_has_data(uint8_t cid);
+		bool tcp_connected(uint8_t clientID);
+		bool tcp_close(uint8_t clientID);
+		bool tcp_send(uint8_t clientID, const char *data, uint16_t size);
+		uint16_t tcp_recv(uint8_t clientID, char *data, uint16_t size);
+		uint16_t tcp_has_data(uint8_t clientID);
 
+		// --- HTTP ---
+		bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID);
+		uint16_t http_get_header_length(uint8_t clientID);
+		bool http_wait_response(uint8_t clientID);
+		void http_parse_header(char* data, uint16_t len);
+		String http_response_status();
+		String http_md5();
+		uint16_t http_get_body_size();
+		uint16_t http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait = 10000);
+		bool http_check_md5(char* data, uint16_t len);
 		// --- CLOCK ---
 		/*
 		* use it to get network clock
@@ -247,6 +266,8 @@ class MODEMBGXX {
 
 		void log_status();
 	private:
+
+		mbedtls_md_context_t ctx;
 
 		int32_t tz = 0;
 
@@ -377,6 +398,8 @@ class MODEMBGXX {
 		String date();
 		String pad2(int value);
 		boolean isNumeric(String str);
+
+		int str2hex(String str);
 };
 
 #endif

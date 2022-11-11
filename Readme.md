@@ -12,6 +12,7 @@ package to communicate with BG95 modem
 - MQTT (multi connection)
 - TCP (multi connection)
 - HTTP (despite modem supports it, I don't see advantage on using it. Use TCP instead)
+  demo-tcp shows an example of 1 http request. Later, in a different repo, I will also provide a library to do and parse http requests
 - COAP (not implemented for now)
 - LwM2M (not implemented for now)
 - DFOTA (to develop..)
@@ -100,6 +101,9 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
   Establish connection to one or multiple hosts, make a request, receive response
   Multiples contexts can also be tested
 
+### demo radio
+  Use it to test different radio technologies
+  
 ## Unit Test with Arduino
   Not available for now
 ### unitTest
