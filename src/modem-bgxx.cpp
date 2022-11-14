@@ -779,17 +779,17 @@ bool MODEMBGXX::http_wait_response(uint8_t clientID){
 	if(request_timeout < millis())
 		return false;
 
-	http.body_len = http_get_header_length(clientID);
-	log_output->printf("header_length: %d \n",http.body_len);
+	uint16_t header_len = http_get_header_length(clientID);
+	log_output->printf("header_length: %d \n",header_len);
 
-	if(http.body_len == 0)
+	if(header_len == 0)
 		return false;
 
-	char* data = (char*)malloc(http.body_len);
+	char* data = (char*)malloc(header_len);
 	if(data == nullptr)
 		return false;
 
-	uint16_t len = tcp_recv(clientID,data,http.body_len);
+	uint16_t len = tcp_recv(clientID,data,header_len);
 
 	http_parse_header((char*)data,len);
 	free(data);
@@ -831,13 +831,12 @@ void MODEMBGXX::http_parse_header(char* data, uint16_t len){
 			http.body_len = length_str.toInt();
 		}else if(line.find("Content-MD5: ") != std::string::npos){
 			String md5_str = String(line.substr(13).c_str());
-
-			while(i*2<md5_str.length()){
-		    Serial.printf("%x ",str2hex(md5_str.substring(i*2,i*2+2)));
-		    http.md5[i] = str2hex(md5_str.substring(i*2,i*2+2));
-				i++;
+			uint8_t j = 0;
+			while(j<sizeof(http.md5)){
+				http.md5[j] = str2hex(md5_str.substring(j*2,j*2+2));
+				j++;
 			}
-
+			Serial.println();
 		}else if(line.find("Content-Type: ") != std::string::npos){
 			String ctype = String(line.substr(14).c_str());
 			if(ctype.length() < sizeof(http.md5)){
@@ -911,19 +910,14 @@ bool MODEMBGXX::http_check_md5(char* data, uint16_t len){
   mbedtls_md_update(&ctx, (const unsigned char *) data, len);
   mbedtls_md_finish(&ctx, (unsigned char*)hash);
   mbedtls_md_free(&ctx);
-
-	Serial.printf("calculated md5: %s \n",hash);
-	Serial.printf("md5: %s \n",http.md5);
-
+	/*
 	uint8_t i = 0;
 	while(i<sizeof(http.md5)){
-    Serial.printf("%x ",hash[i]);
-    Serial.printf("%x ",http.md5[i]);
     if(hash[i] != http.md5[i])
       return false;
 		i++;
 	}
-
+	*/
 	if(memcmp(hash,http.md5,16) == 0)
 		return true;
 
@@ -1206,7 +1200,6 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 		return "";
 	}else if (line.startsWith("+QIURC: \"recv\",") ) {
 		String cid_str = line.substring(15);
-		log("cid_str: "+cid_str);
 		uint8_t cid = cid_str.toInt();
 		if(cid >= MAX_TCP_CONNECTIONS)
 			return "";

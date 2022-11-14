@@ -86,7 +86,7 @@ void loop() {
 
           free(data);
         }
-      }else Serial.println(modem.http_response_status());
+      }else Serial.println("response: "+modem.http_response_status());
       // get body length
       // get data
     }else{
