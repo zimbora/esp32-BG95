@@ -59,7 +59,7 @@ void loop() {
 
   uint16_t len = modem.tcp_has_data(tcp1.clientID);
   if(len > 0){
-    uint8_t* data = (uint8_t*)malloc(len);
+    char* data = (char*)malloc(len);
     if(data != nullptr){
       len = modem.tcp_recv(tcp1.clientID,data,len);
       for(uint16_t i = 0; i<len; i++){
@@ -79,7 +79,7 @@ void loop() {
                "Cache-Control: no-cache\r\n" +
                "Connection: close\r\n\r\n";
 
-        if(!modem.tcp_send(tcp1.clientID,(uint8_t*)request.c_str(),request.length()))
+        if(!modem.tcp_send(tcp1.clientID,(char*)request.c_str(),request.length()))
           Serial.printf("failure doing http request: %s \n",request.c_str());
 
       }else Serial.printf("Connection to %s has failed \n",host.c_str());

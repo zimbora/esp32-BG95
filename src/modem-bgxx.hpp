@@ -40,73 +40,16 @@
 #define   DEBUG_BG95_HIGH
 
 #define MAX_SMS 10
-
+/*
 struct SMS {
 	bool    used   	= false;
 	uint8_t index  	= 0;
 	char origin[20] = "";
 	char msg[256]    = "";
 };
-
-// configurations
-struct Modem {
-	uint8_t pwkey;
-	bool ready;
-	bool did_config;
-	bool sim_ready;
-	uint8_t radio;
-	uint16_t cops;
-	bool force;
-	char tech_string[16];
-	uint8_t technology;
-};
-
-struct APN {
-	char name[64];
-	uint8_t contextID; // context id 1-16
-	bool active;
-	bool connected;
-	uint32_t retry;
-	char ip[15];
-};
-
-struct TCP {
-	char server[64];
-	uint16_t port;
-	uint8_t contextID; // context id 1-16
-	uint8_t connectID; // connect id 0-11
-	uint8_t socket_state;
-	bool active;
-	bool connected;
-};
-
-struct MQTT {
-	char host[64];
-	uint8_t contextID; // index for TCP tcp[] 1-16, limited to MAX_CONNECTIONS
-	uint8_t clientID; // client id 0-5 (limited to MAX_MQTT_CONNECTIONS)
-	uint8_t socket_state;
-	bool active;
-	bool connected;
-};
-
-struct HTTP{
-		uint16_t body_len;
-		char md5[16];
-		char responseStatus[32];
-		char contentType[32];
-};
-
+*/
 class MODEMBGXX {
 	public:
-
-		// State
-		String state;
-		// IMEI
-		String imei;
-		// IP address
-		String ip_address;
-		// pending texts
-		SMS message[MAX_SMS];
 
 		HardwareSerial *log_output = &Serial;
 		HardwareSerial *modem = &Serial2;
@@ -267,6 +210,89 @@ class MODEMBGXX {
 		void log_status();
 	private:
 
+		struct SMS {
+			bool		used;
+			uint8_t index;
+			char 		origin[20];
+			char 		msg[256];
+		};
+
+		// configurations
+		struct Modem {
+			uint8_t pwkey;
+			bool ready;
+			bool did_config;
+			bool sim_ready;
+			uint8_t radio;
+			uint16_t cops;
+			bool force;
+			char tech_string[16];
+			uint8_t technology;
+		};
+
+		struct APN {
+			char name[64];
+			uint8_t contextID; // context id 1-16
+			bool active;
+			bool connected;
+			uint32_t retry;
+			char ip[15];
+		};
+
+		struct TCP {
+			char server[64];
+			uint16_t port;
+			uint8_t contextID; // context id 1-16
+			uint8_t connectID; // connect id 0-11
+			uint8_t socket_state;
+			bool active;
+			bool connected;
+		};
+
+		struct MQTT {
+			char host[64];
+			uint8_t contextID; // index for TCP tcp[] 1-16, limited to MAX_CONNECTIONS
+			uint8_t clientID; // client id 0-5 (limited to MAX_MQTT_CONNECTIONS)
+			uint8_t socket_state;
+			bool active;
+			bool connected;
+		};
+
+		struct HTTP{
+				uint16_t body_len;
+				char md5[16];
+				char responseStatus[32];
+				char contentType[32];
+		};
+
+		Modem op = {
+			/* pwkey */ 			0,
+			/* ready */ 			false,
+			/* did_config */ 	false,
+			/* sim_ready */ 	false,
+			/* radio */			 	0,
+			/* cops */				0,
+			/* force */				false,
+			/* tech_string */	"",
+			/* technology */	0
+		};
+
+		// State
+		String state;
+		// IMEI
+		String imei;
+		// IP address
+		String ip_address;
+		// pending texts
+		SMS message[MAX_SMS];
+
+		int8_t mqtt_buffer[5] = {-1,-1,-1,-1,-1}; // index of msg to read
+
+		APN apn[MAX_CONNECTIONS];
+		TCP tcp[MAX_TCP_CONNECTIONS];
+		MQTT mqtt[MAX_MQTT_CONNECTIONS];
+		HTTP http;
+
 		mbedtls_md_context_t ctx;
 
 		int32_t tz = 0;
@@ -298,6 +324,9 @@ class MODEMBGXX {
 		uint32_t sms_until = 60000;
 
 		void (*sms_handler_func)(uint8_t, String, String) = NULL;
+
+		uint32_t next_retry = 0;
+		uint32_t clock_sync_timeout = 0;
 
 		/*
 		* check if modem is ready (if it's listening for AT commands)

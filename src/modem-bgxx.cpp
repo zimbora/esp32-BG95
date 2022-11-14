@@ -1,27 +1,6 @@
 #include "modem-bgxx.hpp"
 
-Modem op = {
-	/* pwkey */ 			0,
-	/* ready */ 			false,
-	/* did_config */ 	false,
-	/* sim_ready */ 	false,
-	/* radio */			 	0,
-	/* cops */				0,
-	/* force */				false,
-	/* tech_string */	"",
-	/* technology */	0
-};
-
-APN apn[MAX_CONNECTIONS];
-TCP tcp[MAX_TCP_CONNECTIONS];
-MQTT mqtt[MAX_MQTT_CONNECTIONS];
-HTTP http;
-
-int8_t mqtt_buffer[] = {-1,-1,-1,-1,-1}; // index of msg to read
 bool (*parseMQTTmessage)(uint8_t,String,String);
-
-uint32_t next_retry = 0;
-uint32_t clock_sync_timeout = 0;
 
 void MODEMBGXX::init_port(uint32_t baudrate, uint32_t serial_config) {
 

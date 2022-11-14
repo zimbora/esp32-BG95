@@ -19,8 +19,7 @@ package to communicate with BG95 modem
 
 ## Implementation
 The library will create a hierarchy of folders and files like unix filesystem.
-A folder will only be deleted if has no files inside. To delete the files inside you need to
-pass the level of depth that you want to delete those files.
+A folder will only be deleted if has no files inside. To delete the files inside you need to pass the level of depth that you want to delete those files.
 Folders cannot contain "." in the name and files are mandatory to contain "." in the name
 
 ## Public Methods
