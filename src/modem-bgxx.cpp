@@ -715,7 +715,16 @@ uint16_t MODEMBGXX::tcp_has_data(uint8_t clientID){
 	return buffer_len[clientID];
 }
 
-
+/*
+* sends request
+*
+* @host - domain
+* @path - start path with '/'
+* clientID - socket id
+* contextID - context to be used
+*
+* returns true if request has been correctly sent
+*/
 bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
@@ -743,30 +752,11 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
   return true;
 }
 
-uint16_t MODEMBGXX::http_get_header_length(uint8_t clientID){
-
-	if (clientID >= MAX_TCP_CONNECTIONS) return false;
-
-	if (buffer_len[clientID] == 0) return 0;
-
-	uint16_t i;
-	uint8_t last_char = 0;
-	for(i=0; i<buffer_len[clientID]; i++){
-		char a = buffers[clientID][i-3];
-		char b = buffers[clientID][i-2];
-		char c = buffers[clientID][i-1];
-		char d = buffers[clientID][i];
-
-		if(i>=3){
-			if(a == '\r' && b == '\n' && c == '\r' && d == '\n')
-				return i+1;
-		}
-	}
-
-	return 0;
-
-}
-
+/*
+* After request has been sent, it waits for response and parse header
+*
+* returns true if header was detected and parsed thereafter
+*/
 bool MODEMBGXX::http_wait_response(uint8_t clientID){
 
 	uint32_t request_timeout = millis() + 15000;
@@ -796,6 +786,30 @@ bool MODEMBGXX::http_wait_response(uint8_t clientID){
 
 	// stores body
 	return true;
+}
+
+uint16_t MODEMBGXX::http_get_header_length(uint8_t clientID){
+
+	if (clientID >= MAX_TCP_CONNECTIONS) return false;
+
+	if (buffer_len[clientID] == 0) return 0;
+
+	uint16_t i;
+	uint8_t last_char = 0;
+	for(i=0; i<buffer_len[clientID]; i++){
+		char a = buffers[clientID][i-3];
+		char b = buffers[clientID][i-2];
+		char c = buffers[clientID][i-1];
+		char d = buffers[clientID][i];
+
+		if(i>=3){
+			if(a == '\r' && b == '\n' && c == '\r' && d == '\n')
+				return i+1;
+		}
+	}
+
+	return 0;
+
 }
 
 void MODEMBGXX::http_parse_header(char* data, uint16_t len){
@@ -855,20 +869,23 @@ void MODEMBGXX::http_parse_header(char* data, uint16_t len){
 	return;
 }
 
+/*
+* return http response result
+*/
 String MODEMBGXX::http_response_status(){
 
 	return String(http.responseStatus);
 }
 
-String MODEMBGXX::http_md5(){
-
-	return String(http.md5);
-}
-
+/*
+* returns body size to be read
+*/
 uint16_t MODEMBGXX::http_get_body_size(){
 	return http.body_len;
 }
-
+/*
+* gets body data
+*/
 uint16_t MODEMBGXX::http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait){
 
 	uint16_t count = 0;
@@ -899,7 +916,10 @@ uint16_t MODEMBGXX::http_get_body(uint8_t clientID, char* data, uint16_t len, ui
 			return count;
   }
 }
-
+/*
+* check md5 file (Content-MD5: has to be received on header),
+* otherwise it will returns false
+*/
 bool MODEMBGXX::http_check_md5(char* data, uint16_t len){
 
 	char hash[16];
@@ -910,14 +930,7 @@ bool MODEMBGXX::http_check_md5(char* data, uint16_t len){
   mbedtls_md_update(&ctx, (const unsigned char *) data, len);
   mbedtls_md_finish(&ctx, (unsigned char*)hash);
   mbedtls_md_free(&ctx);
-	/*
-	uint8_t i = 0;
-	while(i<sizeof(http.md5)){
-    if(hash[i] != http.md5[i])
-      return false;
-		i++;
-	}
-	*/
+
 	if(memcmp(hash,http.md5,16) == 0)
 		return true;
 

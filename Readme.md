@@ -11,8 +11,7 @@ package to communicate with BG95 modem
 - SMS
 - MQTT (multi connection)
 - TCP (multi connection)
-- HTTP (despite modem supports it, I don't see advantage on using it. Use TCP instead)
-  demo-tcp shows an example of 1 http request. Later, in a different repo, I will also provide a library to do and parse http requests
+- HTTP (GET requests)
 - COAP (not implemented for now)
 - LwM2M (not implemented for now)
 - DFOTA (to develop..)
@@ -89,6 +88,15 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 - [int8_t MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, uint8_t retain, String topic, String msg)](#MQTT-publish)
 - [void MQTT_readAllBuffers(uint8_t clientID)](#MQTT-readAllBuffers)
 
+### HTTP
+- [bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)](#HTTP-request)
+- [bool http_wait_response(uint8_t clientID)](#HTTP-wait-response)
+- [uint16_t http_get_header_length(uint8_t clientID)](#HTTP-get-header-length)
+- [void http_parse_header(char* data, uint16_t len)](#HTTP-parse-header)
+- [String http_response_status()](#HTTP-response-status)
+- [uint16_t http_get_body_size()](#HTTP-body-size)
+- [uint16_t http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait = 10000)](#HTTP-body)
+- [bool http_check_md5(char* data, uint16_t len)](#HTTP-check-mm5)
 
 ## Examples
   Run programs inside examples folder to check how it works
@@ -103,7 +111,7 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 ### demo radio
   Use it to test different radio technologies
-  
+
 ## Unit Test with Arduino
   Not available for now
 ### unitTest
@@ -414,4 +422,64 @@ int8_t MODEMBGXX::MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, ui
 * call it only if unsolicited messages are not being processed
 ```
 void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID)
+```
+
+### HTTP
+
+#HTTP request
+* sends request
+*
+* @host - domain
+* @path - start path with '/'
+* clientID - socket id
+* contextID - context to be used
+*
+* returns true if request has been correctly sent
+```
+bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)
+```
+
+#HTTP wait response
+* After request has been sent, it waits for response and parse header
+*
+* returns true if header was detected and parsed thereafter
+```
+bool http_wait_response(uint8_t clientID)
+```
+
+#HTTP get header length
+
+```
+uint16_t http_get_header_length(uint8_t clientID)
+```
+
+#HTTP parse header
+
+```
+void http_parse_header(char* data, uint16_t len)
+```
+
+#HTTP response status
+* return http response result
+```
+String http_response_status()
+```
+
+#HTTP body size
+* returns body size to be read
+```
+uint16_t http_get_body_size()
+```
+
+#HTTP body
+* gets body data
+```
+uint16_t http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait = 10000)
+```
+
+#HTTP check md5
+* check md5 file (Content-MD5: has to be received on header),
+* otherwise it will returns false
+```
+bool http_check_md5(char* data, uint16_t len)
 ```
