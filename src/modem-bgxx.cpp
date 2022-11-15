@@ -1,6 +1,7 @@
 #include "modem-bgxx.hpp"
 
 bool (*parseMQTTmessage)(uint8_t,String,String);
+void(*tcpOnClose)(uint8_t clientID);
 
 void MODEMBGXX::init_port(uint32_t baudrate, uint32_t serial_config) {
 
@@ -507,6 +508,11 @@ bool MODEMBGXX::sms_handler(void(*handler)(uint8_t, String, String)) {
 // --- --- ---
 
 // --- TCP ---
+
+void MODEMBGXX::tcp_set_callback_on_close(void(*callback)(uint8_t clientID)){
+
+	tcpOnClose = callback;
+}
 /*
 * connect to a host:port
 *
@@ -595,8 +601,11 @@ bool MODEMBGXX::tcp_close(uint8_t clientID) {
 	connected_since[clientID] = 0;
 	data_pending[clientID] = false;
 
-	if(check_command("AT+QICLOSE=" + String(clientID),"OK", "ERROR", 10000)){}
+	if(check_command("AT+QICLOSE=" + String(clientID),"OK", "ERROR", 10000)){
 		tcp[clientID].connected = false;
+		if(tcpOnClose != NULL)
+			tcpOnClose(clientID);
+	}
 
 	return tcp[clientID].connected;
 }

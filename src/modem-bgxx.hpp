@@ -156,6 +156,7 @@ class MODEMBGXX {
 		bool sms_remove(uint8_t index);
 
 		// --- TCP ---
+		void tcp_set_callback_on_close(void(*callback)(uint8_t clientID));
 		bool tcp_connect(uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connect(uint8_t contextID, uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connected(uint8_t clientID);
