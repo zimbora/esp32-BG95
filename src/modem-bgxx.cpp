@@ -511,13 +511,12 @@ bool MODEMBGXX::sms_handler(void(*handler)(uint8_t, String, String)) {
 * connect to a host:port
 *
 * @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
-* @proto - "UDP" or "TCP"
 * @host - can be IP or DNS
 * @wait - maximum time to wait for at command response in ms
 *
 * return true if connection was established
 */
-bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait) {
+bool MODEMBGXX::tcp_connect(uint8_t clientID, String host, uint16_t port, uint16_t wait) {
 
 	uint8_t contextID = 1;
 	if(apn_connected(contextID) != 1)
@@ -530,7 +529,7 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 	tcp[clientID].port = port;
 	tcp[clientID].active = true;
 
-	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"" + proto + "\",\"" + host + "\","
+	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"TCP\",\"" + host + "\","
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
@@ -545,14 +544,13 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 * connect to a host:port
 *
 * @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
-* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
-* @proto - "UDP" or "TCP"
+* @clientID - connection id 0-11, yet it is limited to MAX_TCP_CONNECTIONS
 * @host - can be IP or DNS
 * @wait - maximum time to wait for at command response in ms
 *
 * return true if connection was established
 */
-bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait) {
+bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String host, uint16_t port, uint16_t wait) {
 	if(apn_connected(contextID) != 1)
 		return false;
 
@@ -565,7 +563,7 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, S
 	tcp[clientID].port = port;
 	tcp[clientID].active = true;
 
-	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"" + proto + "\",\"" + host + "\","
+	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"TCP\",\"" + host + "\","
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
@@ -713,7 +711,7 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
 		return false;
 
 	if(has_context(contextID)){
-		if(tcp_connect(contextID,clientID, "TCP", host,80)){
+		if(tcp_connect(contextID,clientID,host,80)){
 			String request = "GET " + path + " HTTP/1.1\r\n" +
 						 "Host: " + host + "\r\n" +
 						 "Cache-Control: no-cache\r\n" +

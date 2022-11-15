@@ -31,8 +31,7 @@
 #define   MAX_CONNECTIONS       	4
 #define   MAX_TCP_CONNECTIONS     2
 #define   MAX_MQTT_CONNECTIONS    2
-#define   CONNECTION_BUFFER    		650 // bytes !! Do not decrease this length, FOTA will fail otherwise
-//#define   CONNECTION_BUFFER    		1500 // it works with freeRTOS - check with ESP32 smartboard
+#define   CONNECTION_BUFFER    		650 // bytes !! Do not decrease this length, FOTA will fail otherwised
 #define   CONNECTION_STATE   			10000 // millis
 #define   SMS_CHECK_INTERVAL 			30000 // milli
 
@@ -157,8 +156,8 @@ class MODEMBGXX {
 		bool sms_remove(uint8_t index);
 
 		// --- TCP ---
-		bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
-		bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 10000);
+		bool tcp_connect(uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
+		bool tcp_connect(uint8_t contextID, uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connected(uint8_t clientID);
 		bool tcp_close(uint8_t clientID);
 		bool tcp_send(uint8_t clientID, const char *data, uint16_t size);
