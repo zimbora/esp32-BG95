@@ -852,6 +852,77 @@ bool MODEMBGXX::https_do_request(String host, String path, uint8_t clientID, uin
   return true;
 }
 
+bool MODEMBGXX::https_post(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
+
+	if(contextID == 0 || contextID > MAX_CONNECTIONS)
+		return false;
+
+	if(clientID >= MAX_TCP_CONNECTIONS)
+		return false;
+
+	if(has_context(contextID)){
+		if(!tcp_connected(clientID)){
+			if(tcp_connect_ssl(contextID,sslClientID,clientID,host,443)){
+
+				String request = "POST " + path + " HTTP/1.1\r\n" +
+					"Host: " + host + "\r\n" +
+					"Cache-Control: no-cache\r\n" +
+					"Content-Length: " + body.length() + "\r\n" +
+					"Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n" +
+					"Connection: close\r\n\r\n" +
+					body;
+
+				Serial.println(request);
+
+				if(!tcp_send(clientID,request.c_str(),request.length())){
+					Serial.printf("failure doing http request: %s \n",request.c_str());
+					tcp_close(clientID);
+				}
+			}else log_output->printf("Connection to %s has failed \n",host.c_str());
+		}
+	}else{
+		log("no context");
+		return false;
+	}
+
+  return true;
+}
+
+bool MODEMBGXX::https_post_json(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
+
+	if(contextID == 0 || contextID > MAX_CONNECTIONS)
+		return false;
+
+	if(clientID >= MAX_TCP_CONNECTIONS)
+		return false;
+
+	if(has_context(contextID)){
+		if(!tcp_connected(clientID)){
+			if(tcp_connect_ssl(contextID,sslClientID,clientID,host,443)){
+
+				String request = "POST " + path + " HTTP/1.1\r\n" +
+					"Host: " + host + "\r\n" +
+					"Cache-Control: no-cache\r\n" +
+					"Content-Length: " + body.length() + "\r\n" +
+					"Content-Type: application/json; charset=utf-8\r\n" +
+					"Connection: close\r\n\r\n" +
+					body;
+
+				Serial.println(request);
+
+				if(!tcp_send(clientID,request.c_str(),request.length())){
+					Serial.printf("failure doing http request: %s \n",request.c_str());
+					tcp_close(clientID);
+				}
+			}else log_output->printf("Connection to %s has failed \n",host.c_str());
+		}
+	}else{
+		log("no context");
+		return false;
+	}
+
+  return true;
+}
 /*
 * After request has been sent, it waits for response and parse header
 *

@@ -67,12 +67,12 @@ void loop() {
 
   if(modem.loop(5000)){ // state was updated
     if(modem.has_context(tcp1.cid)){
-      String host = "www.google.com";
-      String path = "";
+
+
       //String host = "dev.freertos.thinkdigital.pt";
       //String path = "/equipment/types/config/FPLjwi";
-      if(!modem.https_do_request(host,path,tcp1.clientID,tcp1.sslClientID,tcp1.cid)){
-        Serial.printf("http request to: %s%s has failed..\n",host.c_str(),path.c_str());
+      if(!modem.https_post(HTTPS_HOST,HTTPS_PATH,HTTPS_BODY,tcp1.clientID,tcp1.sslClientID,tcp1.cid)){
+        Serial.printf("http request to: %s%s has failed..\n",HTTPS_HOST,HTTPS_PATH);
       }
       if(!modem.http_wait_response(tcp1.clientID)){
         Serial.println("http request: no response received");
