@@ -811,6 +811,17 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
   return true;
 }
 
+/*
+* sends https request
+*
+* @host - domain
+* @path - start path with '/'
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+*/
 bool MODEMBGXX::https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)

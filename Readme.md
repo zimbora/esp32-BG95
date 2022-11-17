@@ -90,6 +90,8 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 ### HTTP
 - [bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)](#HTTP-request)
+- [bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)](#HTTP-request-2)
+- [bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)](#HTTPS-request)
 - [bool http_wait_response(uint8_t clientID)](#HTTP-wait-response)
 - [uint16_t http_get_header_length(uint8_t clientID)](#HTTP-get-header-length)
 - [void http_parse_header(char* data, uint16_t len)](#HTTP-parse-header)
@@ -452,6 +454,20 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID)
 * returns true if request has been correctly sent
 ```
 bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)
+```
+
+#HTTPS request
+* sends https request
+*
+* @host - domain
+* @path - start path with '/'
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+```
+bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)
 ```
 
 #HTTP wait response
