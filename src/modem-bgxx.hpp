@@ -35,8 +35,8 @@
 #define   CONNECTION_STATE   			10000 // millis
 #define   SMS_CHECK_INTERVAL 			30000 // milli
 
-#define   DEBUG_BG95
-#define   DEBUG_BG95_HIGH
+//#define   DEBUG_BG95
+//#define   DEBUG_BG95_HIGH
 
 #define MAX_SMS 10
 /*
@@ -164,6 +164,7 @@ class MODEMBGXX {
 		bool tcp_send(uint8_t clientID, const char *data, uint16_t size);
 		uint16_t tcp_recv(uint8_t clientID, char *data, uint16_t size);
 		uint16_t tcp_has_data(uint8_t clientID);
+		void tcp_check_data_pending();
 
 		// --- HTTP ---
 		bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID);
@@ -371,7 +372,6 @@ class MODEMBGXX {
 
 
 		// --- TCP ---
-		void tcp_check_data_pending();
 		void tcp_read_buffer(uint8_t index, uint16_t wait = 100);
 
 		// --- NETWORK STATE ---

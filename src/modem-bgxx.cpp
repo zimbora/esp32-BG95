@@ -539,7 +539,7 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String host, uint16_t port, uint16
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
-	}else close(clientID);
+	}else tcp_close(clientID);
 
 	get_command("AT+QIGETERROR");
 
@@ -573,7 +573,7 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String host, ui
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
 		tcp[clientID].connected = true;
 		return true;
-	}else close(clientID);
+	}else tcp_close(clientID);
 
 	get_command("AT+QIGETERROR");
 
@@ -726,8 +726,10 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
 						 "Cache-Control: no-cache\r\n" +
 						 "Connection: close\r\n\r\n";
 
-			if(!tcp_send(clientID,request.c_str(),request.length()))
+			if(!tcp_send(clientID,request.c_str(),request.length())){
 				Serial.printf("failure doing http request: %s \n",request.c_str());
+				tcp_close(clientID);
+			}
 
 		}else log_output->printf("Connection to %s has failed \n",host.c_str());
 	}else{
@@ -864,6 +866,14 @@ String MODEMBGXX::http_response_status(){
 }
 
 /*
+* return md5 of last request
+*/
+String MODEMBGXX::http_md5(){
+
+	return String(http.md5);
+}
+
+/*
 * returns body size to be read
 */
 uint16_t MODEMBGXX::http_get_body_size(){
@@ -881,16 +891,18 @@ uint16_t MODEMBGXX::http_get_body(uint8_t clientID, char* data, uint16_t len, ui
 
 		uint16_t size = tcp_has_data(clientID);
 		if(size+count > len)
-			return count;
+			return count; // buffer cannot read all data
 
 		// get data from internal buffer
 		if(size > 0){
-			count += tcp_recv(clientID,&data[count],len-count);
-			Serial.printf("count %d \n", count);
+			count += tcp_recv(clientID,&data[count],size);
+			//count += tcp_recv(clientID,&data[count],len-count);
+			Serial.printf("bytes available on buffer %d \n", count);
+			return count;
 		}
 
 		if(count == len)
-			return count;
+			return count; // buffer is full
 
 		// get data from modem
 		if(!tcp_has_data(clientID)){
