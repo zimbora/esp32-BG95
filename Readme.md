@@ -10,7 +10,7 @@ package to communicate with BG95 modem
 - GNSS
 - SMS
 - MQTT (multi connection)
-- TCP (multi connection)
+- TCP (multi connection + SSL)
 - HTTP (GET requests)
 - COAP (not implemented for now)
 - LwM2M (not implemented for now)
@@ -68,6 +68,7 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 
 - [bool tcp_connect(uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-1)
 - [bool tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait = 80000)](#TCP-connect-2)
+- [bool tcp_connect_ssl(uint8_t contextID, uint8_t sslClientID, uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000)](#TCP-connect-3)
 - [bool tcp_connected(uint8_t cid)](#TCP-connected)
 - [bool tcp_close(uint8_t cid)](#TCP-close)
 - [bool tcp_send(uint8_t cid, uint8_t *data, uint16_t size)](#TCP-send)
@@ -277,7 +278,7 @@ bool sms_remove(uint8_t index)
 #### TCP connect 1
 * connect to a host:port
 *
-* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @clientID - connection id 0-11, yet it is limited to MAX_TCP_CONNECTIONS
 * @proto - "UDP" or "TCP"
 * @host - can be IP or DNS
 * @wait - maximum time to wait for at command response in ms
@@ -291,7 +292,7 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 * connect to a host:port
 *
 * @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
-* @clientID - connection id 1-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @clientID - connection id 0-11, yet it is limited to MAX_TCP_CONNECTIONS
 * @proto - "UDP" or "TCP"
 * @host - can be IP or DNS
 * @wait - maximum time to wait for at command response in ms
@@ -300,6 +301,21 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String proto, String host, uint16_
 ```
 bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String proto, String host, uint16_t port, uint16_t wait)
 ```
+
+#### TCP connect 3
+* connect to a host:port
+*
+* @ccontextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
+* @sslClientID - connection id 0-5, yet it is limited to MAX_TCP_CONNECTIONS
+* @clientID - connection id 0-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+```
+bool MODEMBGXX::tcp_connect_ssl(uint8_t contextID, uint8_t sslClientID, uint8_t clientID, String host, uint16_t port, uint16_t wait)
+```
+
 
 #### TCP connected
 * return tcp connection status

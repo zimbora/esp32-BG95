@@ -11,8 +11,8 @@ MODEMBGXX modem;
 
 struct TCP_CONNECTION {
     uint8_t cid; // connection id 1-16, limited to MAX_CONNECTIONS
-    uint8_t clientID; // client idx 0-10, limited to MAX_TCP_CONNECTIONS
-    uint8_t ssl_cid; // ssl client idx 0-5, limited to MAX_TCP_CONNECTIONS
+    uint8_t sslClientID; // connection id 0-5, limited to MAX_CONNECTIONS
+    uint8_t clientID; // client idx 0-11, limited to MAX_MQTT_CONNECTIONS
     uint8_t msg_id;
 };
 
@@ -47,52 +47,56 @@ void setup() {
   Serial.begin(115200);
 
   modem.init_port(115200,SERIAL_8N1);
-  modem.init(SETTINGS_NB_COPS,AUTO,PWKEY);
+  //modem.init(SETTINGS_NB_COPS,AUTO,PWKEY);
+  modem.init(0,AUTO,PWKEY);
 
   // creates 2 contexts
   modem.setup(tcp1.cid,SETTINGS_NB_APN,SETTINGS_NB_USERNAME,SETTINGS_NB_PASSWORD);
   #ifdef MULTI_CONTEXT
   modem.setup(tcp2.cid,"ocnetjws.prtop",SETTINGS_NB_USERNAME,SETTINGS_NB_PASSWORD);
   #endif
+  // init contexts
 
   if(!modem.set_ssl(tcp1.cid))
     Serial.println("failing configuring ssl");
-  // init contexts
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint16_t len = modem.tcp_has_data(tcp1.clientID);
-  if(len > 0){
-    char* data = (char*)malloc(len);
-    if(data != nullptr){
-      len = modem.tcp_recv(tcp1.clientID,data,len);
-      for(uint16_t i = 0; i<len; i++){
-        Serial.print((char)data[i]);
-      }
-      free(data);
-    }
-  }
-
   if(modem.loop(5000)){ // state was updated
     if(modem.has_context(tcp1.cid)){
       String host = "www.google.com";
-      String path = "/";
-      if(!modem.tcp_connected(tcp1.clientID)){
-        if(modem.tcp_connect_ssl(tcp1.cid,tcp1.ssl_cid,tcp1.clientID, host,443)){
-          String request = "GET " + path + " HTTP/1.1\r\n" +
-          "Host: " + host + "\r\n" +
-          "Cache-Control: no-cache\r\n" +
-          "Connection: close\r\n\r\n";
+      String path = "";
+      //String host = "dev.freertos.thinkdigital.pt";
+      //String path = "/equipment/types/config/FPLjwi";
+      if(!modem.https_do_request(host,path,tcp1.clientID,tcp1.sslClientID,tcp1.cid)){
+        Serial.printf("http request to: %s%s has failed..\n",host.c_str(),path.c_str());
+      }
+      if(!modem.http_wait_response(tcp1.clientID)){
+        Serial.println("http request: no response received");
+      }
 
-          if(!modem.tcp_send(tcp1.clientID,(char*)request.c_str(),request.length()))
-          Serial.printf("failure doing http request: %s \n",request.c_str());
+      if(modem.http_response_status().indexOf("200") > -1){
+        Serial.println("http request: OK");
+        uint16_t len = modem.http_get_body_size();
+        Serial.printf("http body size: %d \n",len);
+        char* data = (char*)malloc(len);
+        if(data != nullptr){
+          len = modem.http_get_body(tcp1.clientID,data,len);
+          for(uint16_t i = 0; i<len; i++)
+            Serial.print((char)data[i]);
 
-        }else Serial.printf("Connection to %s has failed \n",host.c_str());
-      }else Serial.println("Socket is open");
+          // check md5
+          if(!modem.http_check_md5(data,len))
+            Serial.println("md5 verification failed");
 
+          free(data);
+        }
+      }else Serial.println("response: "+modem.http_response_status());
+      // get body length
+      // get data
     }else{
       modem.open_pdp_context(tcp1.cid);
     }

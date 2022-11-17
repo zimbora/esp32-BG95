@@ -95,7 +95,7 @@ class MODEMBGXX {
 		bool setup(uint8_t cid, String apn, String username, String password);
 
 		bool set_ssl(uint8_t ssl_cid);
-		
+
 		//
 		/*
 		* check for pending commands and received data
@@ -172,6 +172,7 @@ class MODEMBGXX {
 
 		// --- HTTP ---
 		bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID);
+		bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
 		uint16_t http_get_header_length(uint8_t clientID);
 		bool http_wait_response(uint8_t clientID);
 		void http_parse_header(char* data, uint16_t len);
