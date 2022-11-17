@@ -35,8 +35,8 @@
 #define   CONNECTION_STATE   			10000 // millis
 #define   SMS_CHECK_INTERVAL 			30000 // milli
 
-//#define   DEBUG_BG95
-//#define   DEBUG_BG95_HIGH
+#define   DEBUG_BG95
+#define   DEBUG_BG95_HIGH
 
 #define MAX_SMS 10
 /*
@@ -93,6 +93,9 @@ class MODEMBGXX {
 		* returns true if succeed
 		*/
 		bool setup(uint8_t cid, String apn, String username, String password);
+
+		bool set_ssl(uint8_t ssl_cid);
+		
 		//
 		/*
 		* check for pending commands and received data
@@ -159,6 +162,7 @@ class MODEMBGXX {
 		void tcp_set_callback_on_close(void(*callback)(uint8_t clientID));
 		bool tcp_connect(uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connect(uint8_t contextID, uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
+		bool tcp_connect_ssl(uint8_t contextID, uint8_t sslClientID, uint8_t clientID, String host, uint16_t port, uint16_t wait = 10000);
 		bool tcp_connected(uint8_t clientID);
 		bool tcp_close(uint8_t clientID);
 		bool tcp_send(uint8_t clientID, const char *data, uint16_t size);
@@ -245,6 +249,8 @@ class MODEMBGXX {
 			uint16_t port;
 			uint8_t contextID; // context id 1-16
 			uint8_t connectID; // connect id 0-11
+			bool ssl;
+			uint8_t sslClientID;
 			uint8_t socket_state;
 			bool active;
 			bool connected;

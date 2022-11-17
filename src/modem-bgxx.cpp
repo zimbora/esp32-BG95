@@ -174,6 +174,23 @@ bool MODEMBGXX::setup(uint8_t cid, String apn_, String username, String password
 	return check_command("AT+QICSGP="+String(cid)+",1,\"" + apn_ + "\",\"" + username + "\",\"" + password + "\"", "OK", "ERROR");  // replacing CGDCONT
 }
 
+bool MODEMBGXX::set_ssl(uint8_t ssl_cid){
+
+	if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",1","OK","ERROR"))
+		return false;
+
+	if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR"))
+		return false;
+
+	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",1","OK","ERROR"))
+		return false;
+
+	if(!check_command("AT+QSSLCFG=\"cacert\","+String(ssl_cid)+",\"cacert.pem\"","OK","ERROR"))
+		return false;
+
+	return true;
+}
+
 bool MODEMBGXX::loop(uint32_t wait) {
 
 	check_messages();
@@ -534,6 +551,7 @@ bool MODEMBGXX::tcp_connect(uint8_t clientID, String host, uint16_t port, uint16
 	memcpy(tcp[clientID].server,host.c_str(),host.length());
 	tcp[clientID].port = port;
 	tcp[clientID].active = true;
+	tcp[clientID].ssl = false;
 
 	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"TCP\",\"" + host + "\","
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
@@ -568,6 +586,7 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String host, ui
 	memcpy(tcp[clientID].server,host.c_str(),host.length());
 	tcp[clientID].port = port;
 	tcp[clientID].active = true;
+	tcp[clientID].ssl = false;
 
 	if(check_command_no_ok("AT+QIOPEN="+String(contextID)+","+String(clientID) + ",\"TCP\",\"" + host + "\","
 	+ String(port),"+QIOPEN: "+String(clientID)+",0","ERROR"),wait){
@@ -579,6 +598,44 @@ bool MODEMBGXX::tcp_connect(uint8_t contextID, uint8_t clientID, String host, ui
 
 	return false;
 }
+
+/*
+* connect to a host:port using ssl
+*
+* @contextID - context id 1-16, yet it is limited to MAX_CONNECTIONS
+* @sslClientID - id 0-5
+* @clientID - connection id 0-11, yet it is limited to MAX_TCP_CONNECTIONS
+* @host - can be IP or DNS
+* @wait - maximum time to wait for at command response in ms
+*
+* return true if connection was established
+*/
+bool MODEMBGXX::tcp_connect_ssl(uint8_t contextID, uint8_t sslClientID, uint8_t clientID, String host, uint16_t port, uint16_t wait) {
+	if(apn_connected(contextID) != 1)
+		return false;
+
+	if (contextID == 0 || contextID > MAX_CONNECTIONS) return false;
+
+	if (clientID >= MAX_TCP_CONNECTIONS) return false;
+
+	memset(tcp[clientID].server,0,sizeof(tcp[clientID].server));
+	memcpy(tcp[clientID].server,host.c_str(),host.length());
+	tcp[clientID].port = port;
+	tcp[clientID].active = true;
+	tcp[clientID].ssl = true;
+	tcp[clientID].sslClientID = sslClientID;
+
+	if(check_command_no_ok("AT+QSSLOPEN="+String(contextID)+","+String(sslClientID)+","+String(clientID) + ",\"" + host + "\","
+	+ String(port),"+QSSLOPEN: "+String(clientID)+",0","ERROR"),wait){
+		tcp[clientID].connected = true;
+		return true;
+	}else tcp_close(clientID);
+
+	get_command("AT+QIGETERROR");
+
+	return false;
+}
+
 /*
 * return tcp connection status
 */
@@ -601,10 +658,18 @@ bool MODEMBGXX::tcp_close(uint8_t clientID) {
 	connected_since[clientID] = 0;
 	data_pending[clientID] = false;
 
-	if(check_command("AT+QICLOSE=" + String(clientID),"OK", "ERROR", 10000)){
-		tcp[clientID].connected = false;
-		if(tcpOnClose != NULL)
+	if(tcp[clientID].ssl){
+		if(check_command("AT+QSSLCLOSE=" + String(clientID),"OK", "ERROR", 10000)){
+			tcp[clientID].connected = false;
+			if(tcpOnClose != NULL)
 			tcpOnClose(clientID);
+		}
+	}else{
+		if(check_command("AT+QICLOSE=" + String(clientID),"OK", "ERROR", 10000)){
+			tcp[clientID].connected = false;
+			if(tcpOnClose != NULL)
+			tcpOnClose(clientID);
+		}
 	}
 
 	return tcp[clientID].connected;
@@ -628,7 +693,13 @@ bool MODEMBGXX::tcp_send(uint8_t clientID, const char *data, uint16_t size) {
 
 	while (modem->available()) modem->read(); // delete garbage on buffer
 
-	if (!check_command_no_ok("AT+QISEND=" + String(clientID) + "," + String(size), ">", "ERROR")) return false;
+	if(tcp[clientID].ssl){
+		if (!check_command_no_ok("AT+QSSLSEND=" + String(clientID) + "," + String(size), ">", "ERROR"))
+			return false;
+	}else{
+		if (!check_command_no_ok("AT+QISEND=" + String(clientID) + "," + String(size), ">", "ERROR"))
+			return false;
+	}
 
 	send_command(data, size);
 	delay(AT_WAIT_RESPONSE);
@@ -975,7 +1046,7 @@ String MODEMBGXX::check_context_state(uint8_t contextID){
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return "";
 
-	String query = "AT+QISTATE=1,"+String(contextID);
+	String query = "AT+QISTATE=0,"+String(contextID);
 	return get_command(query);
 }
 
@@ -984,10 +1055,15 @@ String MODEMBGXX::check_context_state(uint8_t contextID){
 */
 String MODEMBGXX::check_connection_state(uint8_t connectionID){
 
-	if(connectionID == 0 || connectionID > MAX_CONNECTIONS)
+	if(connectionID >= MAX_CONNECTIONS)
 		return "";
 
-	String query = "AT+QISTATE=1,"+String(connectionID);
+	String query = "";
+	if(tcp[connectionID].ssl)
+		query = "AT+QSSLSTATE=1,"+String(connectionID);
+	else
+		query = "AT+QISTATE=1,"+String(connectionID);
+
 	return get_command(query);
 }
 
@@ -1236,6 +1312,33 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 			tcp[cid].connected = false;
 			tcp_close(cid);
 		}
+	}else if (line.startsWith("+QSSLURC: \"recv\",") ) {
+		String cid_str = line.substring(17);
+		uint8_t cid = cid_str.toInt();
+		if(cid >= MAX_TCP_CONNECTIONS)
+			return "";
+		if (set_data_pending) {
+			data_pending[cid] = true;
+			return "";
+		} else {
+			tcp_read_buffer(cid);
+			return "";
+		}
+	}else if (line.startsWith("+QSSLURC: \"closed\",") ) {
+		#ifdef DEBUG_BG95
+		log("QIURC closed: "+line);
+		#endif
+		int8_t index = line.indexOf(",");
+		int8_t cid = -1;
+		if(index > -1){
+			state = state.substring(index+1,index+1);
+			cid = state.toInt();
+			if(cid >= MAX_TCP_CONNECTIONS)
+				return "";
+			log("connection: "+String(cid)+" closed");
+			tcp[cid].connected = false;
+			tcp_close(cid);
+		}
 	}else if (line.startsWith("+CMTI")){
 		check_sms();
 		return "";
@@ -1429,7 +1532,11 @@ bool MODEMBGXX::open_pdp_context(uint8_t contextID) {
 	if(apn[contextID-1].retry > 6*60*60*1000)
 		apn[contextID-1].retry = 6*60*60*1000;
 
-	return check_command("AT+QIACT="+String(contextID), "OK", "ERROR",30000);
+	if(!check_command("AT+QIACT="+String(contextID), "OK", "ERROR",30000)){
+		close_pdp_context(contextID);
+		return false;
+	}
+	return true;
 }
 
 bool MODEMBGXX::close_pdp_context(uint8_t tcp_cid) {
@@ -2209,7 +2316,12 @@ void MODEMBGXX::tcp_read_buffer(uint8_t index, uint16_t wait) {
 	if( left_space <= 10)
 		return;
 
-	send_command("AT+QIRD=" + String(index) + "," + String(left_space));
+	if(tcp[index].ssl){
+		send_command("AT+QSSLRECV=" + String(index) + "," + String(left_space));
+
+	}else{
+		send_command("AT+QIRD=" + String(index) + "," + String(left_space));
+	}
 
 	delay(AT_WAIT_RESPONSE);
 
@@ -2235,6 +2347,26 @@ void MODEMBGXX::tcp_read_buffer(uint8_t index, uint16_t wait) {
 
 				log(info); // +QIRD
 				info = info.substring(7);
+				String size = info.substring(0,1);
+				uint16_t len = info.toInt();
+				if(len > 0){
+					if(len + buffer_len[index] <= CONNECTION_BUFFER){
+						uint16_t n = modem->readBytes(&buffers[index][buffer_len[index]], len);
+						buffer_len[index] += n;
+					}else{
+						log("buffer is full, data read after this will be discarded");
+					}
+				}
+				if(buffer_len[index] == 0)
+					data_pending[index] = false;
+				else
+					data_pending[index] = true;
+
+				break;
+			}else if (info.startsWith("+QSSLRECV: ")) {
+
+				log(info); // +QIRD
+				info = info.substring(11);
 				String size = info.substring(0,1);
 				uint16_t len = info.toInt();
 				if(len > 0){
