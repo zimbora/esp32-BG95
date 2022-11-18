@@ -1,4 +1,4 @@
-#include "modem-bgxx.hpp"
+#include "esp32-BG95.hpp"
 
 bool (*parseMQTTmessage)(uint8_t,String,String);
 void(*tcpOnClose)(uint8_t clientID);
@@ -916,7 +916,7 @@ bool MODEMBGXX::https_post(String host, String path, String body, String token, 
 }
 
 /*
-* sends https post
+* sends https post in json format
 *
 * @host - domain
 * @path - start path with '/'

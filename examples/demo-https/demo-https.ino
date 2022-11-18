@@ -1,5 +1,5 @@
 
-#include "modem-bgxx.hpp"
+#include "esp32-BG95.hpp"
 #include "./credentials.h"
 
 #define PWKEY 4

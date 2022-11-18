@@ -1,5 +1,5 @@
-#ifndef MODEM_BGXX_H
-#define MODEM_BGXX_H
+#ifndef ESP32_BG95_H
+#define ESP32_BG95_H
 
 #include <Arduino.h>
 #include <Time.h>

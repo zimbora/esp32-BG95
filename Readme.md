@@ -1,4 +1,4 @@
-# esp32-bg95
+# esp32-BG95
 
 ## Description
 package to communicate with BG95 modem
