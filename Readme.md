@@ -5,6 +5,7 @@ package to communicate with BG95 modem
 
 ## Functionalities
 
+- Radio (GSM/GPRS/NB-IoT/CATM1) - operator selection
 - APN (multi connection)
 - NTP (clock sync at each hour)
 - GNSS
@@ -12,15 +13,14 @@ package to communicate with BG95 modem
 - MQTT (multi connection)
 - TCP (multi connection + SSL)
 - HTTP (GET requests)
+- HTTPS (GET and Post requests (supporting json also))
 - COAP (not implemented for now)
 - LwM2M (not implemented for now)
 - DFOTA (to develop..)
 - PSM (not implemented for now)
 
 ## Implementation
-The library will create a hierarchy of folders and files like unix filesystem.
-A folder will only be deleted if has no files inside. To delete the files inside you need to pass the level of depth that you want to delete those files.
-Folders cannot contain "." in the name and files are mandatory to contain "." in the name
+Library to interact with BGxx enabling functionalities listed above
 
 ## Public Methods
 
