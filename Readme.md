@@ -89,9 +89,10 @@ Folders cannot contain "." in the name and files are mandatory to contain "." in
 - [void MQTT_readAllBuffers(uint8_t clientID)](#MQTT-readAllBuffers)
 
 ### HTTP
-- [bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)](#HTTP-request)
-- [bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)](#HTTP-request-2)
-- [bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)](#HTTPS-request)
+- [bool http_get(String host, String path, String token, uint8_t clientID, uint8_t contextID)](#HTTP-request)
+- [bool https_get(String host, String path, uint8_t clientID, String token, uint8_t sslClientID, uint8_t contextID)](#HTTPS-request)
+- [bool https_post(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)](#HTTPS-post)
+- [bool https_post_json(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)](#HTTPS-post-json)
 - [bool http_wait_response(uint8_t clientID)](#HTTP-wait-response)
 - [uint16_t http_get_header_length(uint8_t clientID)](#HTTP-get-header-length)
 - [void http_parse_header(char* data, uint16_t len)](#HTTP-parse-header)
@@ -443,7 +444,7 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID)
 
 ### HTTP
 
-#HTTP request
+# HTTP request
 * sends request
 *
 * @host - domain
@@ -456,7 +457,7 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID)
 bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID)
 ```
 
-#HTTPS request
+# HTTPS request
 * sends https request
 *
 * @host - domain
@@ -470,7 +471,39 @@ bool http_do_request(String host, String path, uint8_t clientID, uint8_t context
 bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)
 ```
 
-#HTTP wait response
+# HTTPS post
+* sends https post
+*
+* @host - domain
+* @path - start path with '/'
+* @body -
+* @token - pair of key words to be added to header
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+```
+bool https_post(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)
+```
+
+# HTTPS post json
+* sends https post in json format
+*
+* @host - domain
+* @path - start path with '/'
+* @body -
+* @token - pair of key words to be added to header
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+```
+bool https_post_json(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID)
+```
+
+# HTTP wait response
 * After request has been sent, it waits for response and parse header
 *
 * returns true if header was detected and parsed thereafter
@@ -478,37 +511,37 @@ bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslCli
 bool http_wait_response(uint8_t clientID)
 ```
 
-#HTTP get header length
+# HTTP get header length
 
 ```
 uint16_t http_get_header_length(uint8_t clientID)
 ```
 
-#HTTP parse header
+# HTTP parse header
 
 ```
 void http_parse_header(char* data, uint16_t len)
 ```
 
-#HTTP response status
+# HTTP response status
 * return http response result
 ```
 String http_response_status()
 ```
 
-#HTTP body size
+# HTTP body size
 * returns body size to be read
 ```
 uint16_t http_get_body_size()
 ```
 
-#HTTP body
+# HTTP body
 * gets body data
 ```
 uint16_t http_get_body(uint8_t clientID, char* data, uint16_t len, uint16_t wait = 10000)
 ```
 
-#HTTP check md5
+# HTTP check md5
 * check md5 file (Content-MD5: has to be received on header),
 * otherwise it will returns false
 ```
