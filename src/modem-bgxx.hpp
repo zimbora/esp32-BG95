@@ -171,10 +171,10 @@ class MODEMBGXX {
 		void tcp_check_data_pending();
 
 		// --- HTTP ---
-		bool http_do_request(String host, String path, uint8_t clientID, uint8_t contextID);
-		bool https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
-		bool https_post(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
-		bool https_post_json(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
+		bool http_get(String host, String path, String token, uint8_t clientID, uint8_t contextID);
+		bool https_get(String host, String path, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
+		bool https_post(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
+		bool https_post_json(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID);
 		uint16_t http_get_header_length(uint8_t clientID);
 		bool http_wait_response(uint8_t clientID);
 		void http_parse_header(char* data, uint16_t len);

@@ -777,12 +777,13 @@ uint16_t MODEMBGXX::tcp_has_data(uint8_t clientID){
 *
 * @host - domain
 * @path - start path with '/'
+* @token - pair of key words to be added to header
 * clientID - socket id
 * contextID - context to be used
 *
 * returns true if request has been correctly sent
 */
-bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint8_t contextID){
+bool MODEMBGXX::http_get(String host, String path, String token, uint8_t clientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return false;
@@ -790,11 +791,15 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
 	if(clientID >= MAX_TCP_CONNECTIONS)
 		return false;
 
+	if(token != "")
+		token += "\r\n";
+
 	if(has_context(contextID)){
 		if(tcp_connect(contextID,clientID,host,80)){
 			String request = "GET " + path + " HTTP/1.1\r\n" +
 						 "Host: " + host + "\r\n" +
 						 "Cache-Control: no-cache\r\n" +
+						 token +
 						 "Connection: close\r\n\r\n";
 
 			if(!tcp_send(clientID,request.c_str(),request.length())){
@@ -816,13 +821,14 @@ bool MODEMBGXX::http_do_request(String host, String path, uint8_t clientID, uint
 *
 * @host - domain
 * @path - start path with '/'
+* @token - pair of key words to be added to header
 * @clientID - socket id
 * @sslClientID - socket ssl id
 * @contextID - context to be used
 *
 * returns true if request has been correctly sent
 */
-bool MODEMBGXX::https_do_request(String host, String path, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
+bool MODEMBGXX::https_get(String host, String path, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return false;
@@ -830,12 +836,16 @@ bool MODEMBGXX::https_do_request(String host, String path, uint8_t clientID, uin
 	if(clientID >= MAX_TCP_CONNECTIONS)
 		return false;
 
+	if(token != "")
+		token += "\r\n";
+
 	if(has_context(contextID)){
 		if(!tcp_connected(clientID)){
 			if(tcp_connect_ssl(contextID,sslClientID,clientID,host,443)){
 				String request = "GET " + path + " HTTP/1.1\r\n" +
 				"Host: " + host + "\r\n" +
 				"Cache-Control: no-cache\r\n" +
+				token +
 				"Connection: close\r\n\r\n";
 
 				if(!tcp_send(clientID,request.c_str(),request.length())){
@@ -852,13 +862,29 @@ bool MODEMBGXX::https_do_request(String host, String path, uint8_t clientID, uin
   return true;
 }
 
-bool MODEMBGXX::https_post(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
+/*
+* sends https post
+*
+* @host - domain
+* @path - start path with '/'
+* @body -
+* @token - pair of key words to be added to header
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+*/
+bool MODEMBGXX::https_post(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return false;
 
 	if(clientID >= MAX_TCP_CONNECTIONS)
 		return false;
+
+	if(token != "")
+		token += "\r\n";
 
 	if(has_context(contextID)){
 		if(!tcp_connected(clientID)){
@@ -869,6 +895,7 @@ bool MODEMBGXX::https_post(String host, String path, String body, uint8_t client
 					"Cache-Control: no-cache\r\n" +
 					"Content-Length: " + body.length() + "\r\n" +
 					"Content-Type: application/x-www-form-urlencoded; charset=utf-8\r\n" +
+					token +
 					"Connection: close\r\n\r\n" +
 					body;
 
@@ -888,7 +915,20 @@ bool MODEMBGXX::https_post(String host, String path, String body, uint8_t client
   return true;
 }
 
-bool MODEMBGXX::https_post_json(String host, String path, String body, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
+/*
+* sends https post
+*
+* @host - domain
+* @path - start path with '/'
+* @body -
+* @token - pair of key words to be added to header
+* @clientID - socket id
+* @sslClientID - socket ssl id
+* @contextID - context to be used
+*
+* returns true if request has been correctly sent
+*/
+bool MODEMBGXX::https_post_json(String host, String path, String body, String token, uint8_t clientID, uint8_t sslClientID, uint8_t contextID){
 
 	if(contextID == 0 || contextID > MAX_CONNECTIONS)
 		return false;
