@@ -847,7 +847,7 @@ bool MODEMBGXX::https_get(String host, String path, String token, uint8_t client
 				"Cache-Control: no-cache\r\n" +
 				token +
 				"Connection: close\r\n\r\n";
-
+				Serial.printf("request: %s",request.c_str());
 				if(!tcp_send(clientID,request.c_str(),request.length())){
 					Serial.printf("failure doing http request: %s \n",request.c_str());
 					tcp_close(clientID);
@@ -1041,7 +1041,9 @@ void MODEMBGXX::http_parse_header(char* data, uint16_t len){
 		if(index == std::string::npos)
 			break;
 		std::string line = header.substr(0,index+2);
+		#ifdef DEBUG_BG95
 		Serial.printf("line: %s",line.c_str());
+		#endif
 		if(i==0){
 			String res_str = String(line.c_str());
 			if(res_str.length() < sizeof(http.responseStatus)){
@@ -1061,7 +1063,6 @@ void MODEMBGXX::http_parse_header(char* data, uint16_t len){
 				http.md5[j] = str2hex(md5_str.substring(j*2,j*2+2));
 				j++;
 			}
-			Serial.println();
 		}else if(line.find("Content-Type: ") != std::string::npos){
 			String ctype = String(line.substr(14).c_str());
 			if(ctype.length() < sizeof(http.md5)){
@@ -2313,8 +2314,12 @@ int8_t MODEMBGXX::MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, ui
 
 	String payload = msg;
 
-	String s = "AT+QMTPUBEX="+String(clientID)+","+String(msg_id)+","+String(qos)+","+String(retain)+",\""+topic+"\",\""+payload+"\"";
-	String f = "+QMTPUB: "+String(clientID)+","+String(msg_id)+",";
+	uint32_t msg_id_ = msg_id;
+	if(qos == 0)
+		msg_id_ = 0;
+
+	String s = "AT+QMTPUBEX="+String(clientID)+","+String(msg_id_)+","+String(qos)+","+String(retain)+",\""+topic+"\",\""+payload+"\"";
+	String f = "+QMTPUB: "+String(clientID)+","+String(msg_id_)+",";
 
 	String response = get_command_no_ok_critical(s.c_str(),f.c_str(),15000);
 	response = response.substring(0,1);
