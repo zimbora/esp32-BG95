@@ -1918,15 +1918,16 @@ void MODEMBGXX::sync_clock_ntp(bool force){
 }
 
 void MODEMBGXX::update_sys_clock(){
-	tm* t;
-	if(get_clock(t)){
 
-		int y = t->tm_year;
-	  int mo = t->tm_mon;
-	  int d = t->tm_mday;
-	  int h = t->tm_hour;
-	  int m = t->tm_min;
-	  int s = t->tm_sec;
+	struct tm t;
+	if(get_clock(&t)){
+
+		int y = t.tm_year;
+	  int mo = t.tm_mon;
+	  int d = t.tm_mday;
+	  int h = t.tm_hour;
+	  int m = t.tm_min;
+	  int s = t.tm_sec;
 
 
 		#ifdef DEBUG_BG95
