@@ -35,8 +35,8 @@
 #define   CONNECTION_STATE   			10000 // millis
 #define   SMS_CHECK_INTERVAL 			30000 // milli
 
-#define   DEBUG_BG95
-#define   DEBUG_BG95_HIGH
+//#define   DEBUG_BG95 // define before import it
+//#define   DEBUG_BG95_HIGH // define before import it
 
 #define MAX_SMS 10
 /*
