@@ -6,6 +6,8 @@
 #include <TimeLib.h>
 #include "mbedtls/md.h"
 
+#include "editable_macros.h"
+
 #define GSM 											1
 #define GPRS 											2
 #define NB 												3
@@ -28,15 +30,6 @@
 // CONSTANTS
 #define   AT_WAIT_RESPONSE      	10 // milis
 #define   AT_TERMINATOR     			'\r\n'
-#define   MAX_CONNECTIONS       	4
-#define   MAX_TCP_CONNECTIONS     2
-#define   MAX_MQTT_CONNECTIONS    2
-#define   CONNECTION_BUFFER    		650 // bytes !! Do not decrease this length, FOTA will fail otherwised
-#define   CONNECTION_STATE   			10000 // millis
-#define   SMS_CHECK_INTERVAL 			30000 // milli
-
-//#define   DEBUG_BG95 // define before import it
-//#define   DEBUG_BG95_HIGH // define before import it
 
 #define MAX_SMS 10
 /*
