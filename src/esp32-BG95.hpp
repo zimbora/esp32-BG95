@@ -77,6 +77,7 @@ class MODEMBGXX {
 		* call it to initialize serial port
 		*/
 		void init_port(uint32_t baudrate, uint32_t config);
+		void init_port(uint32_t baudrate, uint32_t serial_config, uint8_t tx_pin, uint8_t rx_pin);
 		/*
 		* call it to disable serial port
 		*/

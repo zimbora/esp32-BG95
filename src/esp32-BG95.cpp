@@ -4,9 +4,13 @@ bool (*parseMQTTmessage)(uint8_t,String,String);
 void(*tcpOnClose)(uint8_t clientID);
 
 void MODEMBGXX::init_port(uint32_t baudrate, uint32_t serial_config) {
+	init_port(baudrate, serial_config, 16, 17);
+}
+
+void MODEMBGXX::init_port(uint32_t baudrate, uint32_t serial_config, uint8_t rx_pin, uint8_t tx_pin) {
 
 	//modem->begin(baudrate);
-	modem->begin(baudrate,serial_config,16,17);
+	modem->begin(baudrate,serial_config, rx_pin, tx_pin);
 	#ifdef DEBUG_BG95
 	log("modem bus inited");
 	#endif
