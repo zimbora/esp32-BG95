@@ -1804,6 +1804,11 @@ int16_t MODEMBGXX::rssi(){
 	return rssi_last;
 }
 
+String MODEMBGXX::technology(){
+
+	return String(op.tech_string);
+}
+
 // use it to get network clock
 bool MODEMBGXX::get_clock(tm* t){
 	String response = get_command("AT+CCLK?","+CCLK: ",300);
@@ -1892,27 +1897,6 @@ bool MODEMBGXX::get_clock(tm* t){
 		}
 	}
 
-  int y = t->tm_year;
-  int mo = t->tm_mon;
-  int d = t->tm_mday;
-  int h = t->tm_hour;
-  int m = t->tm_min;
-  int s = t->tm_sec;
-
-	/*
-	#ifdef DEBUG_BG95
-	log_output->printf("date(yyyy/mm/dd hh:mm:ss) - %d/%d/%d %d:%d:%d \n",y+2000,mo,d,h,m,s);
-	log("tz: "+String(tz));
-	#endif
-	*/
-
-	/*
-  setTime(h, m, s, d, mo, y);
-
-	#ifdef DEBUG_BG95
-		log("[clock] response = '" + String(time) + "'");
-	#endif
-	*/
 	return true;
 }
 
@@ -1931,6 +1915,30 @@ void MODEMBGXX::sync_clock_ntp(bool force){
 		return;
 
 	get_command("AT+QNTP=1,\"pool.ntp.org\",123","+QNTP: ",60000);
+}
+
+void MODEMBGXX::update_sys_clock(){
+	tm* t;
+	if(get_clock(t)){
+
+		int y = t->tm_year;
+	  int mo = t->tm_mon;
+	  int d = t->tm_mday;
+	  int h = t->tm_hour;
+	  int m = t->tm_min;
+	  int s = t->tm_sec;
+
+
+		#ifdef DEBUG_BG95
+		log_output->printf("date(yyyy/mm/dd hh:mm:ss) - %d/%d/%d %d:%d:%d \n",y+2000,mo,d,h,m,s);
+		log("tz: "+String(tz));
+		#endif
+
+	  setTime(h, m, s, d, mo, y);
+
+		log_output->println(now());
+	}
+
 }
 
 String MODEMBGXX::scan_cells(){

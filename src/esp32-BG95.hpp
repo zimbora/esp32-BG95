@@ -109,7 +109,16 @@ class MODEMBGXX {
 		String get_imsi(uint32_t wait = 5000);
 		String get_subscriber_number(uint16_t wait = 3000);
 
+		/*
+		* freeRTOS - safe function
+		* return last retrieved rssi
+		*/
 		int16_t rssi(); // return last read value
+		/*
+		* freeRTOS - safe function
+		* return tech in use
+		*/
+		String technology(); // return tech in use
 
 		// --- CONTEXT ---
 		/*
@@ -193,7 +202,11 @@ class MODEMBGXX {
 		* get timezone difference
 		*/
 		int32_t get_tz();
-
+		/*
+		* update system clock
+		* uses get_clock function
+		*/
+		void update_sys_clock();
 		// --- LOCATION ---
 		/*
 		* get info from near cells
