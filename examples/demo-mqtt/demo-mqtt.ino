@@ -42,7 +42,7 @@ String topic[] = {
 uint8_t topic_qos[] = {
   2
 };
-uint8_t topic_len = 23;
+uint8_t topic_len = 1;
 
 bool (*mqtt_callback)(uint8_t,String,String);
 bool mqtt_parse_msg(uint8_t clientID, String topic, String payload){
