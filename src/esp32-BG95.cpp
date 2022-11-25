@@ -2126,6 +2126,12 @@ bool MODEMBGXX::MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topi
 	return true;
 }
 
+bool MODEMBGXX::MQTT_set_ssl(uint8_t clientID, uint8_t contextID, uint8_t sslClientID){
+	String s = "AT+QMTCFG=\"ssl\","+String(clientID)+",1,"+String(sslClientID);
+	if(!check_command(s.c_str(),"OK",2000)) return false;
+	return set_ssl(sslClientID);
+}
+
 /*
 * Connects to a mqtt broker
 *

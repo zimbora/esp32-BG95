@@ -11,12 +11,14 @@ MODEMBGXX modem;
 
 struct MQTT_CONNECTION {
     uint8_t cid; // connection id 1-16, limited to MAX_CONNECTIONS
+    uint8_t sslClientID; // connection id 0-5, limited to MAX_CONNECTIONS
     uint8_t clientID; // client idx 0-5, limited to MAX_MQTT_CONNECTIONS
     uint8_t msg_id;
 };
 
 MQTT_CONNECTION mqtt1 = {
   1,
+  0,
   0,
   0
 };
@@ -25,10 +27,12 @@ MQTT_CONNECTION mqtt1 = {
     MQTT_CONNECTION mqtt2 = {
       2,
       1,
+      1,
       0
     };
   #else
   MQTT_CONNECTION mqtt2 = {
+    1,
     1,
     1,
     0
@@ -72,8 +76,10 @@ void setup() {
 
   // creates 2 mqtt instances - pass here callback
   modem.MQTT_setup(mqtt1.clientID,mqtt1.cid,"state","offline");
+  modem.MQTT_set_ssl(mqtt1.clientID, mqtt1.cid, mqtt1.sslClientID);
   #ifdef MULTI_MQTT
   modem.MQTT_setup(mqtt2.clientID,mqtt2.cid,"state","offline");
+  modem.MQTT_set_ssl(mqtt2.clientID, mqtt2.cid, mqtt2.sslClientID)
   #endif
 }
 
