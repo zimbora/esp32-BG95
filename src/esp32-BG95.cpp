@@ -180,15 +180,15 @@ bool MODEMBGXX::setup(uint8_t cid, String apn_, String username, String password
 
 bool MODEMBGXX::set_ssl(uint8_t ssl_cid){
 
-	if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",4","OK","ERROR"))
-	//if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",1","OK","ERROR"))
+	if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",4","OK","ERROR")) // allow all
+	//if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",1","OK","ERROR")) // TLS v3.0
 		return false;
 
-	if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0XFFFF","OK","ERROR"))
-	//if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR"))
+	if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0XFFFF","OK","ERROR")) // support all
+	//if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR")) // TLS_RSA_WITH_AES_256_CBC_SHA
 		return false;
 
-	//if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR"))
+	//if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR")) // No authentication
 	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR"))
 		return false;
 
