@@ -4,8 +4,6 @@
 
 #define PWKEY 4
 
-#define NUMITEMS(arg) ((unsigned int) (sizeof (arg) / sizeof (arg [0])))
-
 MODEMBGXX modem;
 
 //#define MULTI_CONTEXT // uncomment to use only 1 context
@@ -13,12 +11,14 @@ MODEMBGXX modem;
 
 struct MQTT_CONNECTION {
     uint8_t cid; // connection id 1-16, limited to MAX_CONNECTIONS
+    uint8_t sslClientID; // connection id 0-5, limited to MAX_CONNECTIONS
     uint8_t clientID; // client idx 0-5, limited to MAX_MQTT_CONNECTIONS
     uint8_t msg_id;
 };
 
 MQTT_CONNECTION mqtt1 = {
   1,
+  0,
   0,
   0
 };
@@ -27,10 +27,12 @@ MQTT_CONNECTION mqtt1 = {
     MQTT_CONNECTION mqtt2 = {
       2,
       1,
+      1,
       0
     };
   #else
   MQTT_CONNECTION mqtt2 = {
+    1,
     1,
     1,
     0
@@ -44,6 +46,7 @@ String topic[] = {
 uint8_t topic_qos[] = {
   2
 };
+uint8_t topic_len = 1;
 
 bool (*mqtt_callback)(uint8_t,String,String);
 bool mqtt_parse_msg(uint8_t clientID, String topic, String payload){
@@ -73,8 +76,10 @@ void setup() {
 
   // creates 2 mqtt instances - pass here callback
   modem.MQTT_setup(mqtt1.clientID,mqtt1.cid,"state","offline");
+  modem.MQTT_set_ssl(mqtt1.clientID, mqtt1.cid, mqtt1.sslClientID);
   #ifdef MULTI_MQTT
   modem.MQTT_setup(mqtt2.clientID,mqtt2.cid,"state","offline");
+  modem.MQTT_set_ssl(mqtt2.clientID, mqtt2.cid, mqtt2.sslClientID)
   #endif
 }
 
@@ -86,7 +91,7 @@ void loop() {
     if(modem.has_context(mqtt1.cid)){
       if(!modem.MQTT_connected(mqtt1.clientID)){
         if(modem.MQTT_connect(mqtt1.clientID,"test1",MQTT_USER_1,MQTT_PASSWORD_1,MQTT_HOST_1,1883))
-          modem.MQTT_subscribeTopics(mqtt1.clientID,++mqtt1.msg_id,topic,topic_qos,NUMITEMS(topic));
+          modem.MQTT_subscribeTopics(mqtt1.clientID,++mqtt1.msg_id,topic,topic_qos,topic_len);
       }
     }else{
       modem.open_pdp_context(mqtt1.cid);
@@ -95,7 +100,7 @@ void loop() {
       if(modem.has_context(mqtt2.cid)){
         if(!modem.MQTT_connected(mqtt2.clientID)){
           if(modem.MQTT_connect(mqtt2.clientID,"test2",MQTT_USER_2,MQTT_PASSWORD_2,MQTT_HOST_2,1883))
-            modem.MQTT_subscribeTopics(mqtt2.clientID,++mqtt2.msg_id,topic,topic_qos,NUMITEMS(topic));
+            modem.MQTT_subscribeTopics(mqtt2.clientID,++mqtt2.msg_id,topic,topic_qos,topic_len);
         }
       }else{
         modem.open_pdp_context(mqtt2.cid);

@@ -57,7 +57,7 @@ void setup() {
   #endif
   // init contexts
 
-  if(!modem.set_ssl(tcp1.cid))
+  if(!modem.set_ssl(tcp1.sslClientID))
     Serial.println("failing configuring ssl");
 
 }

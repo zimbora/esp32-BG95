@@ -180,13 +180,16 @@ bool MODEMBGXX::setup(uint8_t cid, String apn_, String username, String password
 
 bool MODEMBGXX::set_ssl(uint8_t ssl_cid){
 
-	if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",1","OK","ERROR"))
+	if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",4","OK","ERROR")) // allow all
+	//if(!check_command("AT+QSSLCFG=\"sslversion\","+String(ssl_cid)+",1","OK","ERROR")) // TLS v3.0
 		return false;
 
-	if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR"))
+	if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0XFFFF","OK","ERROR")) // support all
+	//if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR")) // TLS_RSA_WITH_AES_256_CBC_SHA
 		return false;
 
-	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",1","OK","ERROR"))
+	//if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR")) // No authentication
+	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR"))
 		return false;
 
 	if(!check_command("AT+QSSLCFG=\"cacert\","+String(ssl_cid)+",\"cacert.pem\"","OK","ERROR"))
@@ -2135,6 +2138,12 @@ bool MODEMBGXX::MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topi
 	return true;
 }
 
+bool MODEMBGXX::MQTT_set_ssl(uint8_t clientID, uint8_t contextID, uint8_t sslClientID){
+	String s = "AT+QMTCFG=\"ssl\","+String(clientID)+",1,"+String(sslClientID);
+	if(!check_command(s.c_str(),"OK",2000)) return false;
+	return set_ssl(sslClientID);
+}
+
 /*
 * Connects to a mqtt broker
 *
@@ -2182,7 +2191,7 @@ bool MODEMBGXX::MQTT_connect(uint8_t clientID, const char* uid, const char* user
 	if(mqtt[clientID].socket_state == MQTT_STATE_CONNECTED){
 		mqtt[clientID].connected = true;
 	}
-
+	
 	return mqtt[clientID].connected;
 }
 
