@@ -5,6 +5,7 @@
 #define PWKEY 4
 
 MODEMBGXX modem;
+#define NUMITEMS(arg) ((unsigned int) (sizeof (arg) / sizeof (arg [0])))
 
 //#define MULTI_CONTEXT // uncomment to use only 1 context
 //#define MULTI_MQTT // uncomment to have multiple mqtt connections
@@ -46,7 +47,7 @@ String topic[] = {
 uint8_t topic_qos[] = {
   2
 };
-uint8_t topic_len = 1;
+
 
 bool (*mqtt_callback)(uint8_t,String,String);
 bool mqtt_parse_msg(uint8_t clientID, String topic, String payload){
@@ -91,7 +92,7 @@ void loop() {
     if(modem.has_context(mqtt1.cid)){
       if(!modem.MQTT_connected(mqtt1.clientID)){
         if(modem.MQTT_connect(mqtt1.clientID,"test1",MQTT_USER_1,MQTT_PASSWORD_1,MQTT_HOST_1,1883))
-          modem.MQTT_subscribeTopics(mqtt1.clientID,++mqtt1.msg_id,topic,topic_qos,topic_len);
+          modem.MQTT_subscribeTopics(mqtt1.clientID,++mqtt1.msg_id,topic,topic_qos,NUMITEMS(topic));
       }
     }else{
       modem.open_pdp_context(mqtt1.cid);
@@ -100,7 +101,7 @@ void loop() {
       if(modem.has_context(mqtt2.cid)){
         if(!modem.MQTT_connected(mqtt2.clientID)){
           if(modem.MQTT_connect(mqtt2.clientID,"test2",MQTT_USER_2,MQTT_PASSWORD_2,MQTT_HOST_2,1883))
-            modem.MQTT_subscribeTopics(mqtt2.clientID,++mqtt2.msg_id,topic,topic_qos,topic_len);
+            modem.MQTT_subscribeTopics(mqtt2.clientID,++mqtt2.msg_id,topic,topic_qos,NUMITEMS(topic));
         }
       }else{
         modem.open_pdp_context(mqtt2.cid);
