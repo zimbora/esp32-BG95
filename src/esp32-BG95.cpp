@@ -188,11 +188,14 @@ bool MODEMBGXX::set_ssl(uint8_t ssl_cid){
 	//if(!check_command("AT+QSSLCFG=\"ciphersuite\","+String(ssl_cid)+",0X0035","OK","ERROR")) // TLS_RSA_WITH_AES_256_CBC_SHA
 		return false;
 
-	//if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR")) // No authentication
-	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR"))
+	//if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",1","OK","ERROR")) // Verify server certificate
+	if(!check_command("AT+QSSLCFG=\"seclevel\","+String(ssl_cid)+",0","OK","ERROR")) //Don't verify server certificate
 		return false;
 
-	if(!check_command("AT+QSSLCFG=\"cacert\","+String(ssl_cid)+",\"cacert.pem\"","OK","ERROR"))
+	if(!check_command("AT+QSSLCFG=\"SNI\","+String(ssl_cid)+",1","OK","ERROR")) //set SNI (required for some servers hosting multiple domains/certs on a single IP)
+		return false;
+
+	if(!check_command("AT+QSSLCFG=\"cacert\","+String(ssl_cid)+",\"cacert.pem\"","OK","ERROR")) //Not needed for seclevel 0
 		return false;
 
 	return true;
