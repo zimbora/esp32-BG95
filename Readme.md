@@ -10,7 +10,7 @@ package to communicate with BG95 modem
 - NTP (clock sync at each hour)
 - GNSS
 - SMS
-- MQTT (multi connection)
+- MQTT (multi connection + SSL)
 - TCP (multi connection + SSL)
 - HTTP (GET requests)
 - HTTPS (GET and Post requests (supporting json also))

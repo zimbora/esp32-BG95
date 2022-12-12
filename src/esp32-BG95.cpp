@@ -811,7 +811,9 @@ bool MODEMBGXX::http_get(String host, String path, String token, uint8_t clientI
 						 "Cache-Control: no-cache\r\n" +
 						 token +
 						 "Connection: close\r\n\r\n";
-
+		 	#ifdef DEBUG_BG95
+ 			Serial.printf("request: %s",request.c_str());
+ 			#endif
 			if(!tcp_send(clientID,request.c_str(),request.length())){
 				Serial.printf("failure doing http request: %s \n",request.c_str());
 				tcp_close(clientID);
@@ -857,7 +859,9 @@ bool MODEMBGXX::https_get(String host, String path, String token, uint8_t client
 				"Cache-Control: no-cache\r\n" +
 				token +
 				"Connection: close\r\n\r\n";
+				#ifdef DEBUG_BG95
 				Serial.printf("request: %s",request.c_str());
+				#endif
 				if(!tcp_send(clientID,request.c_str(),request.length())){
 					Serial.printf("failure doing http request: %s \n",request.c_str());
 					tcp_close(clientID);
@@ -909,7 +913,9 @@ bool MODEMBGXX::https_post(String host, String path, String body, String token, 
 					"Connection: close\r\n\r\n" +
 					body;
 
+				#ifdef DEBUG_BG95
 				Serial.println(request);
+				#endif
 
 				if(!tcp_send(clientID,request.c_str(),request.length())){
 					Serial.printf("failure doing http request: %s \n",request.c_str());
@@ -958,7 +964,9 @@ bool MODEMBGXX::https_post_json(String host, String path, String body, String to
 					"Connection: close\r\n\r\n" +
 					body;
 
+				#ifdef DEBUG_BG95
 				Serial.println(request);
+				#endif
 
 				if(!tcp_send(clientID,request.c_str(),request.length())){
 					Serial.printf("failure doing http request: %s \n",request.c_str());
@@ -991,7 +999,6 @@ bool MODEMBGXX::http_wait_response(uint8_t clientID){
 		return false;
 
 	uint16_t header_len = http_get_header_length(clientID);
-	log_output->printf("header_length: %d \n",header_len);
 
 	if(header_len == 0)
 		return false;
@@ -1131,7 +1138,9 @@ uint16_t MODEMBGXX::http_get_body(uint8_t clientID, char* data, uint16_t len, ui
 		if(size > 0){
 			count += tcp_recv(clientID,&data[count],size);
 			//count += tcp_recv(clientID,&data[count],len-count);
-			Serial.printf("bytes available on buffer %d \n", count);
+			#ifdef DEBUG_BG95_HIGH
+			log("bytes available on buffer: " + String(count));
+			#endif
 			return count;
 		}
 
@@ -1471,7 +1480,9 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 			cid = state.toInt();
 			if(cid >= MAX_TCP_CONNECTIONS)
 				return "";
+			#ifdef DEBUG_BG95_HIGH
 			log("connection: "+String(cid)+" closed");
+			#endif
 			tcp[cid].connected = false;
 			tcp_close(cid);
 		}
@@ -1498,7 +1509,9 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 			cid = state.toInt();
 			if(cid >= MAX_TCP_CONNECTIONS)
 				return "";
+			#ifdef DEBUG_BG95_HIGH
 			log("connection: "+String(cid)+" closed");
+			#endif
 			tcp[cid].connected = false;
 			tcp_close(cid);
 		}
@@ -1575,19 +1588,40 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 		if(index > -1){
 			uint8_t cidx = line.substring(0,index).toInt();
 			if(cidx < MAX_MQTT_CONNECTIONS){
-				String state = line.substring(index+1,index+2);
-				if(isdigit(state.c_str()[0])){
-					mqtt[cidx].socket_state = (int)state.toInt();
-					mqtt[cidx].connected = (int)(state.toInt()==MQTT_STATE_CONNECTED);
-					#ifdef DEBUG_BG95
-					if(mqtt[cidx].connected)
+				if(line.lastIndexOf(",") != index){
+					index = line.lastIndexOf(",");
+					String state = line.substring(index+1,index+2);
+					if((int)state.toInt() == 0){
+						mqtt[cidx].socket_state = MQTT_STATE_CONNECTED;
+						mqtt[cidx].connected = true;
+					}else{
+						mqtt[cidx].socket_state = MQTT_STATE_DISCONNECTED;
+						mqtt[cidx].connected = false;
+						switch((int)state.toInt()){
+							case 0:
+								log("mqtt client "+String(cidx)+" Connection refused - Unacceptable Protocol Version");
+							case 1:
+								log("mqtt client "+String(cidx)+" Connection refused - Identifier Rejected");
+							case 2:
+								log("mqtt client "+String(cidx)+" Connection refused - Server Unavailable");
+							case 3:
+								log("mqtt client "+String(cidx)+" Connection refused - Not Authorized");
+						}
+					}
+				}else{
+					String state = line.substring(index+1,index+2);
+					if(isdigit(state.c_str()[0])){
+						mqtt[cidx].socket_state = (int)state.toInt();
+						mqtt[cidx].connected = (int)(state.toInt()==MQTT_STATE_CONNECTED);
+						#ifdef DEBUG_BG95
+						if(mqtt[cidx].connected)
 						log("mqtt client "+String(cidx)+" is connected");
-					else
+						else
 						log("mqtt client "+String(cidx)+" is disconnected");
-					#endif
-					return "";
+						#endif
+						return "";
+					}
 				}
-
 			}
 		}
 	}else if(line.startsWith("OK"))
@@ -2194,7 +2228,7 @@ bool MODEMBGXX::MQTT_connect(uint8_t clientID, const char* uid, const char* user
 	if(mqtt[clientID].socket_state == MQTT_STATE_CONNECTED){
 		mqtt[clientID].connected = true;
 	}
-	
+
 	return mqtt[clientID].connected;
 }
 
@@ -2546,8 +2580,9 @@ void MODEMBGXX::tcp_read_buffer(uint8_t index, uint16_t wait) {
 
 				break;
 			}else if (info.startsWith("+QSSLRECV: ")) {
-
+				#ifdef DEBUG_BG95_HIGH
 				log(info); // +QIRD
+				#endif
 				info = info.substring(11);
 				String size = info.substring(0,1);
 				uint16_t len = info.toInt();

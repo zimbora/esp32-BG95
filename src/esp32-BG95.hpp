@@ -112,6 +112,11 @@ class MODEMBGXX {
 		* return tech in use
 		*/
 		String technology(); // return tech in use
+		/*
+		* freeRTOS - safe function
+		* return tech in use - use it to check if modem is registered in a tower cell
+		*/
+		int8_t get_actual_mode();
 
 		// --- CONTEXT ---
 		/*
@@ -394,7 +399,6 @@ class MODEMBGXX {
 		// --- NETWORK STATE ---
 		int16_t get_rssi();
 		void get_state(); // get network state
-		int8_t get_actual_mode();
 
 		// --- CLOCK ---
 		void sync_clock_ntp(bool force = false); // private
