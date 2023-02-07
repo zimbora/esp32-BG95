@@ -207,6 +207,12 @@ bool MODEMBGXX::loop(uint32_t wait) {
 
 	tcp_check_data_pending();
 
+	if(MQTT_RECV_MODE){
+		for(uint8_t i=0; i<MAX_MQTT_CONNECTIONS; i++){
+			MQTT_readMessages(i);
+		}
+	}
+
 	if(loop_until < millis()){
 
 		get_state();
@@ -1251,9 +1257,10 @@ void MODEMBGXX::check_modem_buffers() {
 String MODEMBGXX::check_messages() {
 
 	String command = "";
+	String at_terminator = String(AT_TERMINATOR);
 	while (modem->available() > 0) {
 
-		command = modem->readStringUntil(AT_TERMINATOR);
+		command += modem->readStringUntil(AT_TERMINATOR);
 
 		command.trim();
 
@@ -1634,6 +1641,7 @@ String MODEMBGXX::mqtt_message_received(String line){
 
 	String filter = "+QMTRECV: ";
 	int index = line.indexOf(",");
+	int last_index = -1;
 	uint8_t clientID = 0;
 	if(index > -1){ // filter found
 		String aux = line.substring(filter.length(),index); // client id
@@ -1641,23 +1649,87 @@ String MODEMBGXX::mqtt_message_received(String line){
 			clientID = aux.toInt();
 		}else return "";
 
-		aux = line.substring(index+1,index+2); // channel
-		if(isNumeric(aux)){
-			uint8_t channel = (uint8_t)aux.toInt();
-			if(channel < 5)
-				mqtt_buffer[channel] = 0; // I do not know the length of the payload that will be read
-			line = line.substring(index+2); // null
-		}else return "";
+		last_index = line.lastIndexOf(",");
 
-		index = line.indexOf(",");
-		if(index > -1){ // has payload
-			line = line.substring(index+1);
+
+		if(MQTT_RECV_MODE){
+
+			if(index == last_index){ // URC reporting new message
+				aux = line.substring(index+1,index+2); // channel
+				if(isNumeric(aux)){
+					uint8_t channel = (uint8_t)aux.toInt();
+					if(channel < 5)
+						mqtt_buffer[channel] = 0; // I do not know the length of the payload that will be read
+				}else return "";
+				return "";
+			}
+
+			line = line.substring(index+1); // null
+
 			index = line.indexOf(",");
-			if(index > -1){
+			aux = line.substring(0,index); // msg_id
+			if(isNumeric(aux)){
+				uint16_t msg_id = (uint8_t)aux.toInt();
+				line = line.substring(index+1);
+			}else return "";
+
+			index = line.indexOf(",");
+			if(index > -1 && index != last_index){
 				String topic = line.substring(0,index);
+				line = line.substring(index+1);
+				index = line.indexOf(",");
+				if(index == -1)
+					return "";
+				String len = line.substring(0,index);
 				String payload = line.substring(index+1);
+				int len_ = len.toInt();
+
+				if(len_ != 0){
+
+					if(!payload.endsWith("\""))
+						payload += "\n"; // it was terminated due to break line found on payload
+					uint32_t timeout = millis() + 300;
+					while(timeout > millis()){
+						String response = modem->readString();
+						payload += response;
+						if(payload.length()-2 >= len_)
+						break;
+					}
+
+					if(payload.length()-2 >= len_){
+						payload = payload.substring(1,len_+1);
+					}else if(payload.length() < len_){
+						log("!! payload is incomplete");
+					}
+					Serial.printf("payload len %d \n",payload.length());
+					Serial.println(payload);
+				}else payload = "";
+
 				if(parseMQTTmessage != NULL)
 					parseMQTTmessage(clientID,topic,payload);
+			}
+
+
+		}else{
+
+			aux = line.substring(index+1,index+2); // channel
+			if(isNumeric(aux)){
+				uint8_t channel = (uint8_t)aux.toInt();
+				if(channel < 5)
+					mqtt_buffer[channel] = 0; // I do not know the length of the payload that will be read
+				line = line.substring(index+2); // null
+			}else return "";
+
+			index = line.indexOf(",");
+			if(index > -1){ // has topic
+				line = line.substring(index+1);
+				index = line.indexOf(",");
+				if(index > -1 && index != last_index){
+					String topic = line.substring(0,index);
+					String payload = line.substring(index+1);
+					if(parseMQTTmessage != NULL)
+						parseMQTTmessage(clientID,topic,payload);
+				}
 			}
 		}
 	}
@@ -2164,7 +2236,8 @@ bool MODEMBGXX::MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topi
 	check_command(s.c_str(),"OK",2000);
 		//return false;
 
-	s = "AT+QMTCFG=\"recv/mode\","+String(clientID)+",0";
+	// store messages on buffer, report payload_len on read
+	s = "AT+QMTCFG=\"recv/mode\","+String(clientID)+","+String(MQTT_RECV_MODE)+","+String(MQTT_RECV_MODE);
 	check_command(s.c_str(),"OK",2000);
 		//return false;
 
@@ -2377,7 +2450,10 @@ int8_t MODEMBGXX::MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, ui
 	if(qos == 0)
 		msg_id_ = 0;
 
-	String s = "AT+QMTPUBEX="+String(clientID)+","+String(msg_id_)+","+String(qos)+","+String(retain)+",\""+topic+"\",\""+payload+"\"";
+	if(!payload.startsWith("\""))
+		payload = "\""+payload+"\"";
+
+	String s = "AT+QMTPUBEX="+String(clientID)+","+String(msg_id_)+","+String(qos)+","+String(retain)+",\""+topic+"\","+payload;
 	String f = "+QMTPUB: "+String(clientID)+","+String(msg_id_)+",";
 
 	String response = get_command_no_ok_critical(s.c_str(),f.c_str(),15000);
@@ -2405,10 +2481,10 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID) {
 	int8_t i = 0;
 
 	if(MQTT_connected(clientID)){
-		while(i<5){
+		for(uint8_t i=0; i<5; i++){
 			s = "AT+QMTRECV="+String(clientID)+","+String(i);
 			get_command(s.c_str(),400);
-			mqtt_buffer[i++] = -1;
+			mqtt_buffer[i] = -1;
 		}
 	}
 
@@ -2488,7 +2564,7 @@ bool MODEMBGXX::MQTT_close(uint8_t clientID) {
 * No need to use if mqtt messages came on unsolicited response (current configuration)
 */
 void MODEMBGXX::MQTT_readMessages(uint8_t clientID) {
-	if(clientID >= MAX_CONNECTIONS)
+	if(clientID >= MAX_MQTT_CONNECTIONS)
 		return;
 
 	String s = "";
@@ -2837,9 +2913,9 @@ String MODEMBGXX::get_command_no_ok_critical(String command, String filter, uint
 
 			response = parse_command_line(response,true);
 
-			if(response.startsWith("+QMTRECV:")) // parse MQTT received messages
+			if(response.startsWith("+QMTRECV:")){ // parse MQTT received messages
 				mqtt_message_received(response);
-			else if(response.startsWith(filter)){
+			}else if(response.startsWith(filter)){
 				data = response.substring(filter.length());
 				return data;
 			}
