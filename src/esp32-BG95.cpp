@@ -2572,8 +2572,13 @@ void MODEMBGXX::MQTT_readMessages(uint8_t clientID) {
 	bool read = false;
 
 	/* check if a buffer has messages */
+	if(mqtt_pool_timeout < millis()){
+		mqtt_pool = true;
+		mqtt_pool_timeout = millis()+60000;
+	}else mqtt_pool = false;
+
 	while(i<5){
-		if(mqtt_buffer[i] != -1){
+		if(mqtt_pool || mqtt_buffer[i] != -1){
 			s = "AT+QMTRECV="+String(clientID)+","+String(i);
 			get_command(s.c_str(),400);
 			mqtt_buffer[i] = -1;

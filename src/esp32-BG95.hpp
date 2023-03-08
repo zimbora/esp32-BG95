@@ -32,6 +32,7 @@
 #define   AT_TERMINATOR     			'\r\n'
 
 #define MAX_SMS 10
+
 /*
 struct SMS {
 	bool    used   	= false;
@@ -351,6 +352,8 @@ class MODEMBGXX {
 		uint32_t next_retry = 0;
 		uint32_t clock_sync_timeout = 0;
 
+		bool mqtt_pool = false;
+		uint32_t mqtt_pool_timeout = 0;
 		/*
 		* check if modem is ready (if it's listening for AT commands)
 		*/
