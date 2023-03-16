@@ -2503,6 +2503,11 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID) {
 */
 void MODEMBGXX::MQTT_checkConnection(){
 
+	for (uint8_t i = 0; i < MAX_MQTT_CONNECTIONS; i++) {
+		mqtt[i].connected = false;
+		mqtt[i].socket_state = MQTT_STATE_DISCONNECTED;
+	}
+
 	String s = "AT+QMTCONN?";
 	String res = get_command(s.c_str(),2000);
 
