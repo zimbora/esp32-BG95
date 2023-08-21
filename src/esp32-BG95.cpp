@@ -98,6 +98,7 @@ bool MODEMBGXX::wait_modem_to_init(){
 	return false;
 }
 
+// !! use powerCycle instead
 bool MODEMBGXX::switchOn(){
 
 	#ifdef DEBUG_BG95
@@ -1601,6 +1602,7 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 					if((int)state.toInt() == 0){
 						mqtt[cidx].socket_state = MQTT_STATE_CONNECTED;
 						mqtt[cidx].connected = true;
+						mqtt[cidx].unknow_counter = 0;
 					}else{
 						mqtt[cidx].socket_state = MQTT_STATE_DISCONNECTED;
 						mqtt[cidx].connected = false;
@@ -1620,6 +1622,8 @@ String MODEMBGXX::parse_command_line(String line, bool set_data_pending) {
 					if(isdigit(state.c_str()[0])){
 						mqtt[cidx].socket_state = (int)state.toInt();
 						mqtt[cidx].connected = (int)(state.toInt()==MQTT_STATE_CONNECTED);
+						if(mqtt[cidx].connected)
+							mqtt[cidx].unknow_counter = 0;
 						#ifdef DEBUG_BG95
 						if(mqtt[cidx].connected)
 						log("mqtt client "+String(cidx)+" is connected");
@@ -2187,6 +2191,27 @@ String MODEMBGXX::get_imsi(uint32_t wait) {
 	return get_command(command,300);
 }
 
+String MODEMBGXX::get_manufacturer_identification(uint32_t wait) {
+	uint32_t timeout = millis() + wait;
+
+	String command = "AT+CGMI";
+	return get_command(command,300);
+}
+
+String MODEMBGXX::get_model_identification(uint32_t wait) {
+	uint32_t timeout = millis() + wait;
+
+	String command = "AT+CGMM";
+	return get_command(command,300);
+}
+
+String MODEMBGXX::get_firmware_version(uint32_t wait) {
+	uint32_t timeout = millis() + wait;
+
+	String command = "AT+CGMR";
+	return get_command(command,300);
+}
+
 String MODEMBGXX::get_ip(uint8_t cid, uint32_t wait) {
 	if(cid == 0 || cid > MAX_CONNECTIONS)
 		return "";
@@ -2209,6 +2234,7 @@ void MODEMBGXX::MQTT_init(bool(*callback)(uint8_t,String,String)) {
 	uint8_t i = 0;
 	while(i<MAX_MQTT_CONNECTIONS){
 		mqtt[i++].active = false;
+		mqtt[i++].unknow_counter = 0;
 	}
 }
 
@@ -2300,6 +2326,7 @@ bool MODEMBGXX::MQTT_connect(uint8_t clientID, const char* uid, const char* user
 
 	if(mqtt[clientID].socket_state == MQTT_STATE_CONNECTED){
 		mqtt[clientID].connected = true;
+		mqtt[clientID].unknow_counter = 0;
 	}
 
 	return mqtt[clientID].connected;
@@ -2504,8 +2531,16 @@ void MODEMBGXX::MQTT_readAllBuffers(uint8_t clientID) {
 void MODEMBGXX::MQTT_checkConnection(){
 
 	for (uint8_t i = 0; i < MAX_MQTT_CONNECTIONS; i++) {
-		mqtt[i].connected = false;
-		mqtt[i].socket_state = MQTT_STATE_DISCONNECTED;
+		if(mqtt[i].connected){
+			Serial.println("mqtt is connected");
+			mqtt[i].unknow_counter++;
+			Serial.printf("counter %d \n",mqtt[i].unknow_counter);
+			if(mqtt[i].unknow_counter >= 3){
+				Serial.println("mqtt was disconnected");
+				mqtt[i].connected = false;
+				mqtt[i].socket_state = MQTT_STATE_DISCONNECTED;
+			}
+		}
 	}
 
 	String s = "AT+QMTCONN?";
@@ -2524,11 +2559,22 @@ bool MODEMBGXX::MQTT_open(uint8_t clientID, const char* host, uint16_t port) {
 
 	if(MQTT_connected(clientID)){
 		mqtt[clientID].connected = true;
+		mqtt[clientID].unknow_counter = 0;
 	}else{
 		MQTT_close(clientID);
 		String s = "AT+QMTOPEN="+String(clientID)+",\""+String(host)+"\","+String(port);
-		if(check_command_no_ok(s.c_str(),"+QMTOPEN: "+String(clientID)+",0",5000))
+		String res = get_command(s.c_str(),"+QMTOPEN: "+String(clientID)+",",5000);
+		//if(check_command_no_ok(s.c_str(),"+QMTOPEN: "+String(clientID)+",0",5000))
+		if(res == "0"){
 			mqtt[clientID].connected = true;
+			mqtt[clientID].unknow_counter = 0;
+		}else if(res == "-1" && clientID == 0){
+			mqtt_tries[clientID]++;
+			if(mqtt_tries[clientID] >= 5){
+				mqtt_tries[clientID] = 0;
+				close_pdp_context(mqtt[clientID].contextID);
+			}
+		}
 		else mqtt[clientID].connected = false;
 	}
 

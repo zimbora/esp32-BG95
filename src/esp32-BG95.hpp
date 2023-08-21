@@ -8,28 +8,28 @@
 
 #include "editable_macros.h"
 
-#define GSM 											1
-#define GPRS 											2
-#define NB 												3
-#define CATM1 										4
-#define AUTO 											5
+#define GSM 	1
+#define GPRS 	2
+#define NB 		3
+#define CATM1 	4
+#define AUTO 	5
 
-#define NOT_REGISTERED						0
-#define REGISTERED								1
-#define CONNETING									2
-#define DENIED										3
-#define UNKNOW										4
-#define ROAMING										4
+#define NOT_REGISTERED	0
+#define REGISTERED		1
+#define CONNETING		2
+#define DENIED			3
+#define UNKNOW			4
+#define ROAMING			4
 
 #define MQTT_STATE_DISCONNECTED 	0
 #define MQTT_STATE_INITIALIZING 	1
 #define MQTT_STATE_CONNECTING 		2
-#define MQTT_STATE_CONNECTED 			3
+#define MQTT_STATE_CONNECTED 		3
 #define MQTT_STATE_DISCONNECTING 	4
 
 // CONSTANTS
 #define   AT_WAIT_RESPONSE      	10 // milis
-#define   AT_TERMINATOR     			'\r\n'
+#define   AT_TERMINATOR     		'\r\n'
 
 #define MAX_SMS 10
 
@@ -102,6 +102,9 @@ class MODEMBGXX {
 		String get_ccid(uint32_t wait = 5000);
 		String get_imsi(uint32_t wait = 5000);
 		String get_subscriber_number(uint16_t wait = 3000);
+		String get_manufacturer_identification(uint16_t wait = 3000);
+		String get_model_identification(uint16_t wait = 3000);
+		String get_firmware_version(uint16_t wait = 3000);
 
 		/*
 		* freeRTOS - safe function
@@ -217,16 +220,16 @@ class MODEMBGXX {
 		String get_position();
 
 		// --- MQTT ---
-    void MQTT_init(bool(*callback)(uint8_t clientID, String topic,String payload));
-    bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload);
+		void MQTT_init(bool(*callback)(uint8_t clientID, String topic,String payload));
+		bool MQTT_setup(uint8_t clientID, uint8_t contextID, String will_topic, String payload);
 		bool MQTT_set_ssl(uint8_t clientID, uint8_t contextID, uint8_t sslClientID);
-    bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883);
-    bool MQTT_connected(uint8_t clientID);
-    int8_t MQTT_disconnect(uint8_t clientID);
-    bool MQTT_subscribeTopic(uint8_t clientID, uint16_t msg_id, String topic,uint8_t qos);
-    bool MQTT_subscribeTopics(uint8_t clientID, uint16_t msg_id, String topic[],uint8_t qos[], uint8_t len);
-    int8_t MQTT_unSubscribeTopic(uint8_t clientID, uint16_t msg_id, String topic[], uint8_t len);
-    int8_t MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, uint8_t retain, String topic, String msg);
+		bool MQTT_connect(uint8_t clientID, const char* uid, const char* user, const char* pass, const char* host, uint16_t port = 1883);
+		bool MQTT_connected(uint8_t clientID);
+		int8_t MQTT_disconnect(uint8_t clientID);
+		bool MQTT_subscribeTopic(uint8_t clientID, uint16_t msg_id, String topic,uint8_t qos);
+		bool MQTT_subscribeTopics(uint8_t clientID, uint16_t msg_id, String topic[],uint8_t qos[], uint8_t len);
+		int8_t MQTT_unSubscribeTopic(uint8_t clientID, uint16_t msg_id, String topic[], uint8_t len);
+		int8_t MQTT_publish(uint8_t clientID, uint16_t msg_id,uint8_t qos, uint8_t retain, String topic, String msg);
 		void MQTT_readAllBuffers(uint8_t clientID);
 
 		void log_status();
@@ -280,6 +283,7 @@ class MODEMBGXX {
 			uint8_t socket_state;
 			bool active;
 			bool connected;
+			uint8_t unknow_counter;
 		};
 
 		struct HTTP{
@@ -311,6 +315,7 @@ class MODEMBGXX {
 		SMS message[MAX_SMS];
 
 		int8_t mqtt_buffer[5] = {-1,-1,-1,-1,-1}; // index of msg to read
+		int8_t mqtt_tries[5] = {0,0,0,0,0}; // index of msg to read
 
 		APN apn[MAX_CONNECTIONS];
 		TCP tcp[MAX_TCP_CONNECTIONS];
@@ -409,11 +414,11 @@ class MODEMBGXX {
 		void check_commands();
 
 		// --- MQTT ---
-    bool MQTT_open(uint8_t clientID, const char* host, uint16_t port);
-    bool MQTT_isOpened(uint8_t clientID, const char* host, uint16_t port);
-    bool MQTT_close(uint8_t clientID);
-		void MQTT_checkConnection();
-    void MQTT_readMessages(uint8_t clientID);
+		bool MQTT_open(uint8_t clientID, const char* host, uint16_t port);
+		bool MQTT_isOpened(uint8_t clientID, const char* host, uint16_t port);
+		bool MQTT_close(uint8_t clientID);
+			void MQTT_checkConnection();
+		void MQTT_readMessages(uint8_t clientID);
 
 		// check for new SMS messages
 		void check_sms();
