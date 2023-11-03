@@ -63,7 +63,7 @@ void loop() {
       //String host = "www.google.com";
       String host = "dev.freertos.thinkdigital.pt";
       String path = "/equipment/types/config/FPLjwi";
-      if(!modem.http_do_request(host,path,"",tcp1.clientID,tcp1.cid)){
+      if(!modem.http_get(host,path,"",tcp1.clientID,tcp1.cid)){
         Serial.printf("http request to: %s%s has failed..\n",host.c_str(),path.c_str());
       }
       if(!modem.http_wait_response(tcp1.clientID)){

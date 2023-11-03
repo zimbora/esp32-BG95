@@ -2,7 +2,6 @@
 #define ESP32_BG95_H
 
 #include <Arduino.h>
-#include <Time.h>
 #include <TimeLib.h>
 #include "mbedtls/md.h"
 
@@ -102,9 +101,9 @@ class MODEMBGXX {
 		String get_ccid(uint32_t wait = 5000);
 		String get_imsi(uint32_t wait = 5000);
 		String get_subscriber_number(uint16_t wait = 3000);
-		String get_manufacturer_identification(uint16_t wait = 3000);
-		String get_model_identification(uint16_t wait = 3000);
-		String get_firmware_version(uint16_t wait = 3000);
+		String get_manufacturer_identification(uint32_t wait = 3000);
+		String get_model_identification(uint32_t wait = 3000);
+		String get_firmware_version(uint32_t wait = 3000);
 
 		/*
 		* freeRTOS - safe function
